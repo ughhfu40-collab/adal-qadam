@@ -26,13 +26,19 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 app = FastAPI()
 
+# --- ИСПРАВЛЕННЫЙ БЛОК CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://adal-qadam-sigma.vercel.app",
+        "http://localhost:3000",
+        "*" 
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ------------------------------
 
 Base = declarative_base()
 engine = create_engine("sqlite:///./users.db", connect_args={"check_same_thread": False})
@@ -72,8 +78,8 @@ try:
     chroma_client = chromadb.PersistentClient(path="./rag_db")
     collection = chroma_client.get_collection(name="kaz_laws", embedding_function=google_ef)
     print("✅ База RAG успешно подключена!")
-except ValueError:
-    print("⚠️ Ошибка: Коллекция kaz_laws не найдена.")
+except Exception as e:
+    print(f"⚠️ Ошибка коллекции: {e}")
     collection = None
 
 def send_verification_email(to_email: str, code: str):
@@ -168,7 +174,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token = jwt.encode({"sub": user.username}, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
-# НОВЫЙ ЭНДПОИНТ ДЛЯ ПРОФИЛЯ
 @app.get("/users/me")
 def read_users_me(current_user: User = Depends(get_current_user)):
     return {
@@ -223,19 +228,16 @@ async def analyze(
        </ul>
        <br>Опишите вашу проблему..."
     
-    2. ВОПРОСЫ О ТЕБЕ: Если пользователь спрашивает "откуда ты берешь статьи", "как ты работаешь" — ЗАПРЕЩЕНО выводить шаблон из пункта 1! Отвечай коротко и честно своими словами (например: "Я анализирую ситуацию на основе законов РК").
+    2. ВОПРОСЫ О ТЕБЕ: Если пользователь спрашивает "откуда ты берешь статьи", "как ты работаешь" — ЗАПРЕЩЕНО выводить шаблон из пункта 1! Отвечай коротко и честно своими словами.
 
     3. ЮРИДИЧЕСКАЯ РАБОТА: 
        - Соблюдай структуру ГПК РК.
        - Указывай "противоправное бездействие".
-       - В доказательствах: "Указанные обстоятельства достоверно подтверждаются следующими доказательствами: [перечень]".
-       - Моральный вред: "ухудшение общего состояния здоровья, сопровождавшееся стрессом и бессонницей" (ст. 951, 952 ГК РК).
        - ПРОШУ СУД: ОБЯЗАТЕЛЬНО добавь пункт про взыскание судебных расходов.
     
-    4. ФОРМАТИРОВАНИЕ: Отвечай СТРОГО в HTML (<strong>, <br>, <li>). НИКАКИХ markdown-звездочек (**).
+    4. ФОРМАТИРОВАНИЕ: Отвечай СТРОГО в HTML (<strong>, <br>, <li>).
 
     [НАЙДЕННЫЙ ЗАКОН]: {context_text if context_text else "Опирайся на общие знания законов РК."}
-    СТРОГО опирайся на этот закон!
     """
     
     prompt = [system_instruction]
