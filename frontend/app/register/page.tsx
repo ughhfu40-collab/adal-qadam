@@ -49,7 +49,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch('http://127.0.0.1:8000/register/step1', {
+      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -65,7 +65,7 @@ export default function Register() {
     setError('');
     setCodeDigits(Array(6).fill('')); // Очищаем инпуты
     try {
-      const res = await fetch('http://127.0.0.1:8000/register/step1', {
+      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -87,7 +87,7 @@ export default function Register() {
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/register/final', {
+      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: codeStr, username }),
