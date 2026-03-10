@@ -9,13 +9,14 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   
-  // Состояние для 6 цифр кода
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(''));
-  // Рефы для управления фокусом инпутов
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [timeLeft, setTimeLeft] = useState(60);
   const router = useRouter();
+
+  // URL твоего бэкенда
+  const API_URL = "https://adal-qadam.onrender.com";
 
   useEffect(() => {
     if (step === 2 && timeLeft > 0) {
@@ -24,21 +25,18 @@ export default function Register() {
     }
   }, [step, timeLeft]);
 
-  // Обработчик ввода цифр
   const handleDigitChange = (index: number, value: string) => {
-    if (value.length > 1 || (value && !/^\d+$/.test(value))) return; // Только 1 цифра
+    if (value.length > 1 || (value && !/^\d+$/.test(value))) return;
     
     const newDigits = [...codeDigits];
     newDigits[index] = value;
     setCodeDigits(newDigits);
 
-    // Перевод фокуса вперед
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // Обработчик Backspace
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !codeDigits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
@@ -49,7 +47,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
+      const res = await fetch(`${API_URL}/register/step1`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -57,44 +55,52 @@ export default function Register() {
       if (res.ok) {
         setStep(2);
         setTimeLeft(60);
-      } else setError('Email уже занят');
-    } catch (e) { setError('Нет связи с сервером'); }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || 'Email уже занят');
+      }
+    } catch (err) { setError('Нет связи с сервером'); }
   };
 
   const handleResendCode = async () => {
     setError('');
-    setCodeDigits(Array(6).fill('')); // Очищаем инпуты
+    setCodeDigits(Array(6).fill(''));
     try {
-      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
+      const res = await fetch(`${API_URL}/register/step1`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
         setTimeLeft(60);
-        inputRefs.current[0]?.focus(); // Фокус на первый инпут
+        inputRefs.current[0]?.focus();
       } else setError('Ошибка при отправке кода');
-    } catch (e) { setError('Нет связи с сервером'); }
+    } catch (err) { setError('Нет связи с сервером'); }
   };
 
   const handleFinal = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const codeStr = codeDigits.join(''); // Собираем цифры в строку
+    const codeStr = codeDigits.join('');
     if (codeStr.length !== 6) {
       setError('Введите полный код');
       return;
     }
 
     try {
-      const res = await fetch('https://adal-qadam.onrender.com/register/step1', {
+      // ИСПРАВЛЕНО: здесь должен быть /register/final
+      const res = await fetch(`${API_URL}/register/final`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: codeStr, username }),
       });
-      if (res.ok) router.push('/login');
-      else setError('Неверный код или логин занят');
-    } catch (e) { setError('Нет связи с сервером'); }
+      if (res.ok) {
+        router.push('/login');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || 'Неверный код или логин занят');
+      }
+    } catch (err) { setError('Нет связи с сервером'); }
   };
 
   const formatTime = (seconds: number) => {
@@ -108,32 +114,36 @@ export default function Register() {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none" />
       
-      <div className="w-full max-w-md z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-300 relative">
+      <div className="w-full max-w-md z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-300 relative text-white">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black tracking-[0.2em] text-blue-200 drop-shadow-[0_0_15px_rgba(191,219,254,0.8)] uppercase mb-4">
             Adal Qadam
           </h1>
-          <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full backdrop-blur-md shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+          <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full backdrop-blur-md">
             <span className="text-blue-300 text-[11px] font-bold uppercase tracking-[0.2em]">
               Регистрация: {step === 1 ? 'Шаг 1' : 'Шаг 2'}
             </span>
           </div>
         </div>
 
-        {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-2xl text-center backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.1)]">{error}</div>}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-2xl text-center backdrop-blur-md">
+            {error}
+          </div>
+        )}
         
         {step === 1 ? (
           <>
             <form onSubmit={handleStep1} className="space-y-4">
-              <input type="email" required placeholder="Ваш Email" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 focus:bg-black/40 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={email} onChange={e => setEmail(e.target.value)} />
-              <input type="password" required placeholder="Придумайте пароль" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 focus:bg-black/40 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md active:scale-[0.98] mt-2">
+              <input type="email" required placeholder="Ваш Email" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={email} onChange={e => setEmail(e.target.value)} />
+              <input type="password" required placeholder="Придумайте пароль" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
+              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2">
                 Получить код
               </button>
             </form>
             <div className="mt-8 text-center pt-6 border-t border-white/10">
               <p className="text-gray-400 text-sm font-light">Уже есть аккаунт?{' '}
-                <button onClick={() => router.push('/login')} className="text-blue-400 font-bold hover:text-blue-300 transition-all drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]">Войти</button>
+                <button onClick={() => router.push('/login')} className="text-blue-400 font-bold hover:text-blue-300 transition-all">Войти</button>
               </p>
             </div>
           </>
@@ -145,7 +155,6 @@ export default function Register() {
             </div>
 
             <form onSubmit={handleFinal} className="space-y-5">
-              {/* КРУГЛЫЕ ИНПУТЫ ДЛЯ КОДА */}
               <div className="flex justify-center gap-3">
                 {codeDigits.map((digit, idx) => (
                   <input
@@ -153,7 +162,7 @@ export default function Register() {
                     ref={el => { inputRefs.current[idx] = el; }}
                     type="text"
                     maxLength={1}
-                    className="w-12 h-12 bg-black/20 border border-white/10 text-white text-center text-xl rounded-full focus:border-blue-500/50 focus:bg-black/40 outline-none transition-all shadow-inner"
+                    className="w-12 h-12 bg-black/20 border border-white/10 text-white text-center text-xl rounded-full focus:border-blue-500/50 outline-none transition-all shadow-inner"
                     value={digit}
                     onChange={e => handleDigitChange(idx, e.target.value)}
                     onKeyDown={e => handleKeyDown(idx, e)}
@@ -161,9 +170,9 @@ export default function Register() {
                 ))}
               </div>
 
-              <input type="text" required placeholder="Придумайте логин" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
+              <input type="text" required placeholder="Придумайте логин" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
               
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md active:scale-[0.98]">
+              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md">
                 Завершить
               </button>
             </form>
@@ -172,7 +181,7 @@ export default function Register() {
               {timeLeft > 0 ? (
                 <p className="text-gray-400 text-sm font-light">Код действителен: <span className="text-blue-400 font-mono font-bold">{formatTime(timeLeft)}</span></p>
               ) : (
-                <button onClick={handleResendCode} className="text-blue-400 text-sm font-bold hover:text-blue-300 transition-all drop-shadow-[0_0_8px_rgba(96,165,250,0.4)]">
+                <button onClick={handleResendCode} className="text-blue-400 text-sm font-bold hover:text-blue-300 transition-all">
                   Отправить код повторно
                 </button>
               )}
