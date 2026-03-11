@@ -78,10 +78,9 @@ try:
 except Exception as e:
     print(f"⚠️ Ошибка RAG: {e}")
 
-# --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ОТПРАВКИ ЧЕРЕЗ RESEND ---
+# --- ФУНКЦИИ ОТПРАВКИ ЧЕРЕЗ RESEND ---
 
 def send_verification_email(to_email: str, code: str):
-    # Код печатается в логи для подстраховки
     print(f"\n{'='*40}\n🔑 КОД РЕГИСТРАЦИИ: {code}\n{'='*40}\n")
     try:
         params = {
@@ -116,8 +115,6 @@ def send_reset_email(to_email: str, code: str):
         resend.Emails.send(params)
     except Exception as e:
         print(f"❌ Ошибка отправки Resend: {str(e)}")
-
-# --- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
 
 class Step1Req(BaseModel):
     email: EmailStr
@@ -221,6 +218,18 @@ def get_cases(u: User = Depends(get_current_user), db: Session = Depends(get_db)
 def get_messages(case_id: int, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(Message).filter(Message.case_id == case_id).all()
 
+class UpdateUsernameReq(BaseModel):
+    new_username: str = Field(..., min_length=3)
+
+@app.post("/users/update-username")
+def update_username(data: UpdateUsernameReq, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == data.new_username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Этот логин уже занят")
+    u.username = data.new_username
+    db.commit()
+    return {"ok": True}
+
 @app.post("/analyze")
 async def analyze(
     text: str = Form(None), 
@@ -250,28 +259,39 @@ async def analyze(
         except:
             pass
 
+    # --- ЗДЕСЬ ОБНОВЛЕННЫЙ ПРОМПТ С АНАЛИТИКОЙ И ДИСКЛЕЙМЕРОМ ---
     system_instruction = f"""
-    Ты — ИИ-юрист Adal Qadam. Твоя главная цель — помогать людям составлять ИСКОВЫЕ ЗАЯВЛЕНИЯ по законам РК.
+    Ты — LegalPredict AI, продвинутый цифровой юрист и аналитик РК (в системе Adal Qadam). Твоя главная цель — оценивать перспективы дел и помогать людям составлять ИСКОВЫЕ ЗАЯВЛЕНИЯ по законам РК.
 
     🔴 ВАЖНЕЙШИЕ ПРАВИЛА:
     1. ПРИВЕТСТВИЕ: ТОЛЬКО если пользователь пишет слова вроде "Привет", "Здравствуйте", отвечай: 
-       "Здравствуйте! Я — цифровой юрист <strong>Adal Qadam</strong>. <br><br>Моя главная задача — защищать ваши законные интересы. Я специализируюсь на законодательстве РК и могу помочь вам:<br>
-       <ul>
-         <li>Составить <strong>исковое заявление</strong>;</li>
-         <li>Написать <strong>претензию</strong>.</li>
-       </ul>
-       <br>Опишите вашу проблему..."
+       "Здравствуйте! Я — цифровой юрист <strong>Adal Qadam</strong>. <br><br>Моя главная задача — защищать ваши законные интересы. Я могу помочь вам проанализировать дело и составить документы.<br>Опишите вашу проблему..."
     
-    2. ВОПРОСЫ О ТЕБЕ: Если пользователь спрашивает "откуда ты берешь статьи", "как ты работаешь" — ЗАПРЕЩЕНО выводить шаблон из пункта 1! Отвечай коротко и честно своими словами (например: "Я анализирую ситуацию на основе законов РК").
+    2. ВОПРОСЫ О ТЕБЕ: Если спрашивают "откуда ты берешь статьи", отвечай коротко и честно своими словами, без шаблонов.
 
-    3. ЮРИДИЧЕСКАЯ РАБОТА: 
+    🤖 АНАЛИТИКА И ПРОГНОЗИРОВАНИЕ (ЕСЛИ ОПИСАНА СИТУАЦИЯ):
+    Если пользователь описывает проблему, ОБЯЗАТЕЛЬНО включай в ответ:
+    <ul>
+        <li><strong>Вероятность успеха:</strong> Укажи примерный % выигрыша (например, 70-80%).</li>
+        <li><strong>Правовое обоснование:</strong> Назови конкретные статьи Кодексов РК (ГК, ГПК, КоАП).</li>
+        <li><strong>Анализ рисков:</strong> Укажи слабые места позиции пользователя.</li>
+        <li><strong>Рекомендация по доказательствам:</strong> Что нужно собрать для суда.</li>
+    </ul>
+
+    3. ЮРИДИЧЕСКАЯ РАБОТА (ЕСЛИ НУЖЕН ИСК): 
        - Соблюдай структуру ГПК РК.
        - Указывай "противоправное бездействие".
-       - В доказательствах: "Указанные обстоятельства достоверно подтверждаются следующими доказательствами: [перечень]".
-       - Моральный вред: "ухудшение общего состояния здоровья, сопровождавшееся стрессом и бессонницей" (ст. 951, 952 ГК РК).
+       - В доказательствах: "Указанные обстоятельства достоверно подтверждаются...".
        - ПРОШУ СУД: ОБЯЗАТЕЛЬНО добавь пункт про взыскание судебных расходов.
     
     4. ФОРМАТИРОВАНИЕ: Отвечай СТРОГО в HTML (<strong>, <br>, <li>). НИКАКИХ markdown-звездочек (**).
+
+    ⚠️ ВАЖНО - ЮРИДИЧЕСКАЯ ОГОВОРКА:
+    Абсолютно в конце каждого ответа (после всего текста и документов) ты обязан добавлять этот текст:
+    <br><br>
+    <div style="font-size: 11px; color: #888; border-top: 1px solid #333; padding-top: 10px; margin-top: 20px;">
+    <strong>Отказ от ответственности (LegalPredict AI):</strong> Сервис является информационно-аналитическим инструментом и не оказывает юридическую помощь в смысле Закона РК «Об адвокатской деятельности». Прогноз носит справочный характер и не является гарантией исхода дела.
+    </div>
 
     [НАЙДЕННЫЙ ЗАКОН]: {context_text if context_text else "Опирайся на общие знания законов РК."}
     СТРОГО опирайся на этот закон!
@@ -288,23 +308,3 @@ async def analyze(
     db.commit()
     
     return {"analysis": ai_text, "case_id": c_id}
-# ... (весь твой код выше без изменений) ...
-
-@app.get("/cases/{case_id}")
-def get_messages(case_id: int, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(Message).filter(Message.case_id == case_id).all()
-
-# --- НОВЫЙ ЭНДПОИНТ ДЛЯ СМЕНЫ ЛОГИНА ---
-class UpdateUsernameReq(BaseModel):
-    new_username: str = Field(..., min_length=3)
-
-@app.post("/users/update-username")
-def update_username(data: UpdateUsernameReq, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.username == data.new_username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Этот логин уже занят")
-    u.username = data.new_username
-    db.commit()
-    return {"ok": True}
-
-# ... (твой analyze и остальное без изменений) ...

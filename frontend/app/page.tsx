@@ -16,7 +16,6 @@ export default function Home() {
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Ссылка на твой бэкенд
   const API_URL = 'https://adal-qadam.onrender.com';
 
   useEffect(() => {
@@ -27,7 +26,21 @@ export default function Home() {
     }
     loadCases();
 
-    // Подключаем библиотеку для PDF
+    // --- ОБРАБОТКА ШАБЛОНОВ ИЗ URL ---
+    const params = new URLSearchParams(window.location.search);
+    const cId = params.get('case');
+    const templatePrompt = params.get('template_prompt');
+
+    if (cId) {
+      loadCaseChat(parseInt(cId));
+    } else if (templatePrompt) {
+      // Если пришли со страницы шаблонов, вставляем текст и очищаем URL
+      setText(templatePrompt);
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, "/"); 
+      }, 500);
+    }
+
     const script = document.createElement('script');
     script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
     script.async = true;
@@ -40,7 +53,6 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  // Функция для скачивания PDF
   const downloadPDF = (content: string, title: string) => {
     const element = document.createElement('div');
     element.innerHTML = `
@@ -49,6 +61,12 @@ export default function Home() {
         <p style="text-align: center; font-size: 12px; color: #666;">Юридический анализ и документы</p>
         <hr style="margin: 20px 0;"/>
         <div style="line-height: 1.6; font-size: 14px;">${content}</div>
+        
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; font-size: 10px; color: #777;">
+          <p><strong>Отказ от ответственности:</strong> Данный документ сформирован ИИ Adal Qadam. 
+          Результат носит справочный характер и не является юридическим заключением или гарантией исхода дела. 
+          Сервис не оказывает юридическую помощь в смысле Закона РК «Об адвокатской деятельности».</p>
+        </div>
       </div>
     `;
     const opt = {
@@ -186,7 +204,7 @@ export default function Home() {
              <h2 className="text-2xl font-black tracking-[0.2em] text-blue-200 uppercase">Adal Qadam</h2>
           </div>
            <div className="p-5 pt-3">
-            <button onClick={startNewCase} className="w-full flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500/30 text-blue-100 p-3 rounded-2xl font-medium transition-all">
+            <button onClick={startNewCase} className="w-full flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500/30 text-blue-100 p-3 rounded-2xl font-medium transition-all hover:bg-blue-600/30">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
               Новое дело
             </button>
@@ -198,8 +216,8 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <div className="p-5 border-t border-blue-500/10">
-            <button onClick={() => router.push('/profile')} className="w-full p-3 bg-blue-900/30 text-blue-100 rounded-2xl mb-3">Личный кабинет</button>
+          <div className="p-5 border-t border-blue-500/10 space-y-2">
+            <button onClick={() => router.push('/profile')} className="w-full p-3 bg-blue-900/30 text-blue-100 rounded-2xl hover:bg-blue-900/50 transition-all">Личный кабинет</button>
             <button onClick={handleLogout} className="w-full text-gray-500 hover:text-red-400 p-3 transition-all">Выйти</button>
           </div>
         </div>
@@ -223,22 +241,22 @@ export default function Home() {
               <h3 className="text-4xl font-black text-blue-100 mb-4 tracking-wider uppercase">Adal Qadam</h3>
               <p className="text-blue-300/60 max-w-md font-light mb-8">Ваш цифровой юрист РК.</p>
               <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={() => setText("Взыскание долга")} className="px-4 py-2 rounded-xl border border-blue-500/20 bg-blue-900/20 text-blue-300 hover:bg-blue-600/30 transition-all">Взыскание долга</button>
-                <button onClick={() => setText("Моральный вред")} className="px-4 py-2 rounded-xl border border-blue-500/20 bg-blue-900/20 text-blue-300 hover:bg-blue-600/30 transition-all">Моральный вред</button>
+                <button onClick={() => router.push('/templates')} className="px-6 py-2 rounded-xl border border-purple-500/30 bg-purple-900/20 text-purple-300 hover:bg-purple-600/30 transition-all flex items-center gap-2">
+                  📄 Открыть шаблоны
+                </button>
               </div>
             </div>
            ) : (
             <div className="w-full max-w-5xl space-y-6">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
-                  <div className={`rounded-3xl p-6 relative ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
+                  <div className={`rounded-3xl p-6 relative ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30 max-w-[80%]' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
                     <div className="prose prose-invert max-w-none text-white" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                     
-                    {/* КНОПКА PDF ТОЛЬКО ДЛЯ AI СООБЩЕНИЙ */}
                     {msg.role === 'ai' && (
                       <button 
                         onClick={() => downloadPDF(formatMessage(msg.content), activeCaseId ? activeCaseId.toString() : 'doc')}
-                        className="mt-6 flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-100 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg"
+                        className="mt-6 flex items-center justify-center w-[160px] gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         СКАЧАТЬ PDF
@@ -261,12 +279,12 @@ export default function Home() {
              <textarea
               className="flex-1 bg-transparent text-white outline-none resize-none py-3 px-2"
               rows={1}
-              placeholder="Опишите ситуацию..."
+              placeholder="Опишите ситуацию или выберите шаблон..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             />
-            <button onClick={handleSend} disabled={loading || (!text && !file)} className="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg">
+            <button onClick={handleSend} disabled={loading || (!text && !file)} className="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg disabled:opacity-50">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
             </button>
           </div>

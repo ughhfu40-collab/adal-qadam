@@ -117,9 +117,21 @@ export default function Profile() {
           <div className="p-6 text-center">
              <h2 className="text-2xl font-black text-blue-200 uppercase">Adal Qadam</h2>
           </div>
-          <div className="p-5">
-            <button onClick={() => router.push('/')} className="w-full flex items-center justify-center gap-2 border border-blue-500/20 text-blue-300 p-3 rounded-2xl">
+          <div className="p-5 space-y-3">
+            <button onClick={() => router.push('/')} className="w-full flex items-center justify-center gap-2 border border-blue-500/20 text-blue-300 p-3 rounded-2xl hover:bg-blue-600/10 transition-all">
               В чат ИИ
+            </button>
+            <button onClick={() => router.push('/templates')} className="w-full flex items-center justify-center gap-2 bg-purple-600/20 border border-purple-500/30 text-purple-300 p-3 rounded-2xl hover:bg-purple-600/40 transition-all font-medium">
+              📄 Шаблоны документов
+            </button>
+            <button onClick={() => router.push('/education')} className="w-full flex items-center justify-center gap-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 p-3 rounded-2xl hover:bg-emerald-600/40 transition-all font-medium">
+              🎓 База знаний
+            </button>
+            <button onClick={() => router.push('/lawyers')} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white p-3 rounded-2xl hover:bg-blue-500 transition-all font-medium">
+              👨‍⚖️ Каталог адвокатов
+            </button>
+            <button onClick={() => router.push('/audit')} className="w-full flex items-center justify-center gap-2 bg-red-600/20 border border-red-500/30 text-red-300 p-3 rounded-2xl hover:bg-red-600/40 transition-all font-medium">
+              🕵️‍♂️ Проверка юриста
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4">
@@ -179,6 +191,32 @@ export default function Profile() {
               ))
             )}
           </div>
+
+          {/* НОВЫЙ БЛОК: ЮРИДИЧЕСКАЯ ЗАЩИТА (DISCLAIMER) */}
+          <div className="mt-12 bg-[#0c1527] border border-red-500/20 p-8 rounded-3xl relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500/60 rounded-l-3xl"></div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+              <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Юридические оговорки и защита от ответственности
+            </h2>
+            <div className="space-y-4 text-sm text-gray-400 leading-relaxed">
+              <p>
+                <strong className="text-gray-300">1. Статус сервиса:</strong> Adal Qadam (LegalPredict AI) является информационно-аналитическим инструментом. Сервис не оказывает юридическую помощь в смысле, определённом Законом РК «Об адвокатской деятельности и юридической помощи».
+              </p>
+              <p>
+                <strong className="text-gray-300">2. Отказ от юридической ответственности:</strong> Прогнозируемый результат носит «информационный и справочный характер» и не является юридическим заключением, рекомендацией или гарантией исхода дела. Ответственность за окончательные решения остаётся за пользователем.
+              </p>
+              <p>
+                <strong className="text-gray-300">3. Ограничение ответственности:</strong> Сервис не несёт ответственности за прямые или косвенные убытки, возникшие в результате использования платформы. Прогнозы могут не совпадать с фактическим решением суда.
+              </p>
+              <p>
+                <strong className="text-gray-300">4. Дата актуальности:</strong> Все прогнозы основаны на актуальной базе судебных решений. Текущая сессия: <span className="text-blue-400 font-mono">{new Date().toLocaleDateString('ru-RU')}</span>.
+              </p>
+            </div>
+          </div>
+
         </div>
       </main>
     </div>
