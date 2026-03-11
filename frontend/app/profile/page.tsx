@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Profile() {
-  // Явно прописываем тип для пользователя или null
+  // Использование any помогает избежать ошибок типизации на этапе разработки
   const [user, setUser] = useState<any>(null);
   const [cases, setCases] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loadingError, setLoadingError] = useState("");
   const router = useRouter();
 
+  // Ссылка на твой бэкенд - УЖЕ ИСПРАВЛЕНО
   const API_URL = 'https://adal-qadam.onrender.com';
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function Profile() {
     }
     loadUserData(token);
     loadUserCases(token);
-    if (window.innerWidth < 768) setIsSidebarOpen(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setIsSidebarOpen(false);
   }, [router]);
 
   const loadUserData = async (token: string) => {
@@ -77,7 +78,6 @@ export default function Profile() {
 
   if (!user) return <div className="min-h-screen bg-[#080f1e] flex items-center justify-center text-blue-400">Загрузка...</div>;
 
-  // Безопасный расчет суммы
   const savedMoney = (cases ? cases.length : 0) * 50000;
   const displayName = user?.username || user?.email?.split('@')[0] || "User";
   const initial = displayName.charAt(0).toUpperCase();
@@ -97,7 +97,6 @@ export default function Profile() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4">
-            {/* Добавлена проверка на существование c */}
             {cases && cases.map((c: any) => (
               <button key={c?.id} onClick={() => router.push(`/?case=${c?.id}`)} className="w-full text-left px-4 py-3 rounded-xl text-[14px] truncate text-gray-400 hover:bg-blue-600/10 hover:text-blue-200 block mb-1">
                 {c?.title || "Без названия"}

@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState('');
   const router = useRouter();
 
-  // Ссылка на твой бэкенд
+  // Ссылка на твой бэкенд - УЖЕ ИСПРАВЛЕНО
   const API_URL = 'https://adal-qadam.onrender.com';
 
   const handleRequestCode = async (e: any) => {

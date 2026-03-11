@@ -15,7 +15,7 @@ export default function Register() {
   const [timeLeft, setTimeLeft] = useState(60);
   const router = useRouter();
 
-  // URL твоего бэкенда
+  // URL твоего бэкенда - УЖЕ ИСПРАВЛЕНО
   const API_URL = "https://adal-qadam.onrender.com";
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function Register() {
     }
 
     try {
-      // ИСПРАВЛЕНО: здесь должен быть /register/final
+      // ПУТЬ ИСПРАВЛЕН НА /register/final
       const res = await fetch(`${API_URL}/register/final`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

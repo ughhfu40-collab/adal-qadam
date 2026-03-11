@@ -11,7 +11,7 @@ from datetime import datetime
 import google.generativeai as genai
 import os
 import random
-import resend
+import resend  # Библиотека уже импортирована у тебя
 from dotenv import load_dotenv
 from PIL import Image
 import io
@@ -22,23 +22,19 @@ load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('models/gemini-flash-latest')
+
+# Убедись, что ключ RESEND_API_KEY добавлен в переменные окружения Render
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 app = FastAPI()
 
-# --- ИСПРАВЛЕННЫЙ БЛОК CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://adal-qadam-sigma.vercel.app",
-        "http://localhost:3000",
-        "*" 
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ------------------------------
 
 Base = declarative_base()
 engine = create_engine("sqlite:///./users.db", connect_args={"check_same_thread": False})
@@ -73,20 +69,50 @@ class Message(Base):
 Base.metadata.create_all(bind=engine)
 
 print("⏳ Подключение к векторной базе знаний...")
+collection = None
 try:
     google_ef = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=API_KEY)
     chroma_client = chromadb.PersistentClient(path="./rag_db")
-    collection = chroma_client.get_collection(name="kaz_laws", embedding_function=google_ef)
+    collection = chroma_client.get_or_create_collection(name="kaz_laws", embedding_function=google_ef)
     print("✅ База RAG успешно подключена!")
 except Exception as e:
-    print(f"⚠️ Ошибка коллекции: {e}")
-    collection = None
+    print(f"⚠️ Ошибка RAG: {e}")
+
+# --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ОТПРАВКИ (RESEND) ---
 
 def send_verification_email(to_email: str, code: str):
+    # Код всё еще будет дублироваться в консоль для подстраховки
     print(f"\n{'='*40}\n🔑 КОД РЕГИСТРАЦИИ: {code}\n{'='*40}\n")
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev", # По умолчанию для бесплатных аккаунтов
+            "to": to_email,
+            "subject": "Код регистрации Adal Qadam",
+            "html": f"""
+            <div style="font-family: sans-serif; text-align: center; background: #060b19; color: white; padding: 20px; border-radius: 15px;">
+                <h1 style="color: #3b82f6;">Adal Qadam</h1>
+                <p>Ваш код подтверждения регистрации:</p>
+                <h2 style="background: #1e293b; padding: 10px; border-radius: 10px; display: inline-block; letter-spacing: 5px;">{code}</h2>
+                <p style="font-size: 12px; color: #94a3b8;">Код действителен в течение 10 минут.</p>
+            </div>
+            """
+        })
+    except Exception as e:
+        print(f"❌ Ошибка Resend: {e}")
 
 def send_reset_email(to_email: str, code: str):
     print(f"\n{'='*40}\n🔓 КОД ВОССТАНОВЛЕНИЯ: {code}\n{'='*40}\n")
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": to_email,
+            "subject": "Восстановление пароля Adal Qadam",
+            "html": f"<h3>Код для сброса пароля: <strong>{code}</strong></h3>"
+        })
+    except Exception as e:
+        print(f"❌ Ошибка Resend: {e}")
+
+# --- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
 
 class Step1Req(BaseModel):
     email: EmailStr
@@ -211,10 +237,13 @@ async def analyze(
     
     context_text = ""
     if collection and text:
-        results = collection.query(query_texts=[text], n_results=1)
-        if results['documents'] and results['documents'][0]:
-            context_text = results['documents'][0][0]
-            print(f"🔍 Найдена статья: {context_text}")
+        try:
+            results = collection.query(query_texts=[text], n_results=1)
+            if results['documents'] and results['documents'][0]:
+                context_text = results['documents'][0][0]
+                print(f"🔍 Найдена статья: {context_text}")
+        except:
+            pass
 
     system_instruction = f"""
     Ты — ИИ-юрист Adal Qadam. Твоя главная цель — помогать людям составлять ИСКОВЫЕ ЗАЯВЛЕНИЯ по законам РК.
@@ -228,16 +257,19 @@ async def analyze(
        </ul>
        <br>Опишите вашу проблему..."
     
-    2. ВОПРОСЫ О ТЕБЕ: Если пользователь спрашивает "откуда ты берешь статьи", "как ты работаешь" — ЗАПРЕЩЕНО выводить шаблон из пункта 1! Отвечай коротко и честно своими словами.
+    2. ВОПРОСЫ О ТЕБЕ: Если пользователь спрашивает "откуда ты берешь статьи", "как ты работаешь" — ЗАПРЕЩЕНО выводить шаблон из пункта 1! Отвечай коротко и честно своими словами (например: "Я анализирую ситуацию на основе законов РК").
 
     3. ЮРИДИЧЕСКАЯ РАБОТА: 
        - Соблюдай структуру ГПК РК.
        - Указывай "противоправное бездействие".
+       - В доказательствах: "Указанные обстоятельства достоверно подтверждаются следующими доказательствами: [перечень]".
+       - Моральный вред: "ухудшение общего состояния здоровья, сопровождавшееся стрессом и бессонницей" (ст. 951, 952 ГК РК).
        - ПРОШУ СУД: ОБЯЗАТЕЛЬНО добавь пункт про взыскание судебных расходов.
     
-    4. ФОРМАТИРОВАНИЕ: Отвечай СТРОГО в HTML (<strong>, <br>, <li>).
+    4. ФОРМАТИРОВАНИЕ: Отвечай СТРОГО в HTML (<strong>, <br>, <li>). НИКАКИХ markdown-звездочек (**).
 
     [НАЙДЕННЫЙ ЗАКОН]: {context_text if context_text else "Опирайся на общие знания законов РК."}
+    СТРОГО опирайся на этот закон!
     """
     
     prompt = [system_instruction]

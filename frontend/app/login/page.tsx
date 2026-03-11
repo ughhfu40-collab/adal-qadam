@@ -18,7 +18,7 @@ export default function Login() {
   const [msg, setMsg] = useState('');
   const router = useRouter();
 
-  // URL твоего бэкенда
+  // URL твоего бэкенда - УЖЕ ИСПРАВЛЕНО
   const API_URL = "https://adal-qadam.onrender.com";
 
   const handleDigitChange = (index: number, value: string) => {
