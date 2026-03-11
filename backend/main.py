@@ -11,7 +11,7 @@ from datetime import datetime
 import google.generativeai as genai
 import os
 import random
-import resend  # Библиотека уже импортирована у тебя
+import resend
 from dotenv import load_dotenv
 from PIL import Image
 import io
@@ -23,7 +23,7 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('models/gemini-flash-latest')
 
-# Убедись, что ключ RESEND_API_KEY добавлен в переменные окружения Render
+# Установка API ключа Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 app = FastAPI()
@@ -78,39 +78,44 @@ try:
 except Exception as e:
     print(f"⚠️ Ошибка RAG: {e}")
 
-# --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ОТПРАВКИ (RESEND) ---
+# --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ОТПРАВКИ ЧЕРЕЗ RESEND ---
 
 def send_verification_email(to_email: str, code: str):
-    # Код всё еще будет дублироваться в консоль для подстраховки
+    # Код печатается в логи для подстраховки
     print(f"\n{'='*40}\n🔑 КОД РЕГИСТРАЦИИ: {code}\n{'='*40}\n")
     try:
-        resend.Emails.send({
-            "from": "onboarding@resend.dev", # По умолчанию для бесплатных аккаунтов
+        params = {
+            "from": "onboarding@resend.dev",
             "to": to_email,
-            "subject": "Код регистрации Adal Qadam",
+            "subject": "Код подтверждения Adal Qadam",
             "html": f"""
-            <div style="font-family: sans-serif; text-align: center; background: #060b19; color: white; padding: 20px; border-radius: 15px;">
-                <h1 style="color: #3b82f6;">Adal Qadam</h1>
-                <p>Ваш код подтверждения регистрации:</p>
-                <h2 style="background: #1e293b; padding: 10px; border-radius: 10px; display: inline-block; letter-spacing: 5px;">{code}</h2>
-                <p style="font-size: 12px; color: #94a3b8;">Код действителен в течение 10 минут.</p>
+            <div style="font-family: sans-serif; text-align: center; background: #060b19; color: white; padding: 30px; border-radius: 20px;">
+                <h1 style="color: #3b82f6; margin-bottom: 20px;">Adal Qadam</h1>
+                <p style="font-size: 16px;">Ваш код для регистрации в системе:</p>
+                <div style="background: #1e293b; padding: 20px; border-radius: 12px; display: inline-block; margin: 20px 0;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 10px; color: #60a5fa;">{code}</span>
+                </div>
+                <p style="font-size: 12px; color: #64748b;">Если вы не запрашивали этот код, просто проигнорируйте письмо.</p>
             </div>
             """
-        })
+        }
+        resend.Emails.send(params)
+        print(f"✅ Письмо успешно отправлено на {to_email}")
     except Exception as e:
-        print(f"❌ Ошибка Resend: {e}")
+        print(f"❌ Ошибка отправки Resend: {str(e)}")
 
 def send_reset_email(to_email: str, code: str):
     print(f"\n{'='*40}\n🔓 КОД ВОССТАНОВЛЕНИЯ: {code}\n{'='*40}\n")
     try:
-        resend.Emails.send({
+        params = {
             "from": "onboarding@resend.dev",
             "to": to_email,
             "subject": "Восстановление пароля Adal Qadam",
-            "html": f"<h3>Код для сброса пароля: <strong>{code}</strong></h3>"
-        })
+            "html": f"<p>Код для сброса пароля: <strong>{code}</strong></p>"
+        }
+        resend.Emails.send(params)
     except Exception as e:
-        print(f"❌ Ошибка Resend: {e}")
+        print(f"❌ Ошибка отправки Resend: {str(e)}")
 
 # --- ОСТАЛЬНОЙ КОД БЕЗ ИЗМЕНЕНИЙ ---
 
