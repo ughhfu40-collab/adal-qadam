@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -12,19 +12,15 @@ export default function Profile() {
   const API_URL = 'https://adal-qadam.onrender.com';
 
   useEffect(() => {
-    // Проверка токена строго один раз при монтировании
-    const token = localStorage.getItem('token');
-    
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) {
-      router.replace('/login');
+      router.push('/login');
       return;
     }
-
     loadUserData(token);
     loadUserCases(token);
-
-    if (window.innerWidth < 768) setIsSidebarOpen(false);
-  }, []); // Пустой массив, чтобы не было бесконечных циклов
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setIsSidebarOpen(false);
+  }, [router]);
 
   const loadUserData = async (token: string) => {
     try {
@@ -36,7 +32,7 @@ export default function Profile() {
         setUser(data);
       } else {
         localStorage.removeItem('token'); 
-        router.replace('/login');
+        router.push('/login');
       }
     } catch (e) { 
       setLoadingError("Ошибка связи с сервером");
@@ -57,6 +53,7 @@ export default function Profile() {
     }
   };
 
+  // --- ФУНКЦИЯ СМЕНЫ ЛОГИНА ---
   const handleChangeUsername = async () => {
     const newName = prompt("Введите новый логин (минимум 3 символа):");
     if (!newName || newName.length < 3) return;
@@ -86,7 +83,7 @@ export default function Profile() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    router.replace('/login');
+    router.push('/login');
   };
 
   const maskEmail = (email: string) => {
@@ -98,22 +95,14 @@ export default function Profile() {
 
   if (loadingError) {
     return (
-      <div className="min-h-screen bg-[#080f1e] flex flex-col items-center justify-center p-6 text-white text-center">
+      <div className="min-h-screen bg-[#080f1e] flex flex-col items-center justify-center p-6 text-white">
         <p>{loadingError}</p>
-        <button onClick={() => window.location.reload()} className="mt-4 bg-blue-600 px-4 py-2 rounded">Попробовать снова</button>
+        <button onClick={() => router.push('/')} className="mt-4 bg-blue-600 px-4 py-2 rounded">Назад</button>
       </div>
     );
   }
 
-  // Защита от краша: если данных нет, показываем только экран загрузки
-  if (!user) return (
-    <div className="min-h-screen bg-[#080f1e] flex items-center justify-center text-blue-400">
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <span>Загрузка...</span>
-      </div>
-    </div>
-  );
+  if (!user) return <div className="min-h-screen bg-[#080f1e] flex items-center justify-center text-blue-400">Загрузка...</div>;
 
   const savedMoney = (cases ? cases.length : 0) * 50000;
   const displayName = user?.username || user?.email?.split('@')[0] || "User";
@@ -168,6 +157,7 @@ export default function Profile() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-black text-white">{displayName}</h1>
+                  {/* КНОПКА РЕДАКТИРОВАНИЯ ЛОГИНА */}
                   <button onClick={handleChangeUsername} className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-blue-400 group" title="Изменить логин">
                     <svg className="w-5 h-5 opacity-70 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -202,6 +192,7 @@ export default function Profile() {
             )}
           </div>
 
+          {/* НОВЫЙ БЛОК: ЮРИДИЧЕСКАЯ ЗАЩИТА (DISCLAIMER) */}
           <div className="mt-12 bg-[#0c1527] border border-red-500/20 p-8 rounded-3xl relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500/60 rounded-l-3xl"></div>
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
@@ -211,12 +202,21 @@ export default function Profile() {
               Юридические оговорки и защита от ответственности
             </h2>
             <div className="space-y-4 text-sm text-gray-400 leading-relaxed">
-              <p><strong className="text-gray-300">1. Статус сервиса:</strong> Adal Qadam является информационно-аналитическим инструментом. Сервис не оказывает юридическую помощь в смысле, определённом Законом РК.</p>
-              <p><strong className="text-gray-300">2. Отказ от юридической ответственности:</strong> Прогноз носит «информационный характер» и не является юридическим заключением.</p>
-              <p><strong className="text-gray-300">3. Ограничение ответственности:</strong> Сервис не несёт ответственности за убытки. Прогнозы могут не совпадать с решением суда.</p>
-              <p><strong className="text-gray-300">4. Дата актуальности:</strong> Текущая сессия: <span className="text-blue-400 font-mono">{new Date().toLocaleDateString('ru-RU')}</span>.</p>
+              <p>
+                <strong className="text-gray-300">1. Статус сервиса:</strong> Adal Qadam является информационно-аналитическим инструментом. Сервис не оказывает юридическую помощь в смысле, определённом Законом РК «Об адвокатской деятельности и юридической помощи».
+              </p>
+              <p>
+                <strong className="text-gray-300">2. Отказ от юридической ответственности:</strong> Прогнозируемый результат носит «информационный и справочный характер» и не является юридическим заключением, рекомендацией или гарантией исхода дела. Ответственность за окончательные решения остаётся за пользователем.
+              </p>
+              <p>
+                <strong className="text-gray-300">3. Ограничение ответственности:</strong> Сервис не несёт ответственности за прямые или косвенные убытки, возникшие в результате использования платформы. Прогнозы могут не совпадать с фактическим решением суда.
+              </p>
+              <p>
+                <strong className="text-gray-300">4. Дата актуальности:</strong> Все прогнозы основаны на актуальной базе судебных решений. Текущая сессия: <span className="text-blue-400 font-mono">{new Date().toLocaleDateString('ru-RU')}</span>.
+              </p>
             </div>
           </div>
+
         </div>
       </main>
     </div>
