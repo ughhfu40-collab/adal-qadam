@@ -26,6 +26,12 @@ export default function Home() {
       return;
     }
     loadCases();
+
+    // Подключаем библиотеку для PDF
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.async = true;
+    document.body.appendChild(script);
   }, [router]);
 
   useEffect(() => {
@@ -33,6 +39,28 @@ export default function Home() {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, 100);
   }, [messages, loading]);
+
+  // Функция для скачивания PDF
+  const downloadPDF = (content: string, title: string) => {
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: Arial, sans-serif; color: black; background: white;">
+        <h1 style="text-align: center; color: #1e3a8a;">ADAL QADAM</h1>
+        <p style="text-align: center; font-size: 12px; color: #666;">Юридический анализ и документы</p>
+        <hr style="margin: 20px 0;"/>
+        <div style="line-height: 1.6; font-size: 14px;">${content}</div>
+      </div>
+    `;
+    const opt = {
+      margin: 0.5,
+      filename: `Adal_Qadam_${title || 'document'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    // @ts-ignore
+    window.html2pdf().set(opt).from(element).save();
+  };
 
   const toggleListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('speechRecognition' in window)) {
@@ -203,8 +231,19 @@ export default function Home() {
             <div className="w-full max-w-5xl space-y-6">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
-                  <div className={`rounded-3xl p-6 ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
+                  <div className={`rounded-3xl p-6 relative ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
                     <div className="prose prose-invert max-w-none text-white" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+                    
+                    {/* КНОПКА PDF ТОЛЬКО ДЛЯ AI СООБЩЕНИЙ */}
+                    {msg.role === 'ai' && (
+                      <button 
+                        onClick={() => downloadPDF(formatMessage(msg.content), activeCaseId ? activeCaseId.toString() : 'doc')}
+                        className="mt-6 flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-100 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        СКАЧАТЬ PDF
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

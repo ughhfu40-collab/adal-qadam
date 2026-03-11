@@ -288,3 +288,23 @@ async def analyze(
     db.commit()
     
     return {"analysis": ai_text, "case_id": c_id}
+# ... (весь твой код выше без изменений) ...
+
+@app.get("/cases/{case_id}")
+def get_messages(case_id: int, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(Message).filter(Message.case_id == case_id).all()
+
+# --- НОВЫЙ ЭНДПОИНТ ДЛЯ СМЕНЫ ЛОГИНА ---
+class UpdateUsernameReq(BaseModel):
+    new_username: str = Field(..., min_length=3)
+
+@app.post("/users/update-username")
+def update_username(data: UpdateUsernameReq, u: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == data.new_username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Этот логин уже занят")
+    u.username = data.new_username
+    db.commit()
+    return {"ok": True}
+
+# ... (твой analyze и остальное без изменений) ...

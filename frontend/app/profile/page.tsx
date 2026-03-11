@@ -3,14 +3,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Profile() {
-  // Использование any помогает избежать ошибок типизации на этапе разработки
   const [user, setUser] = useState<any>(null);
   const [cases, setCases] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loadingError, setLoadingError] = useState("");
   const router = useRouter();
 
-  // Ссылка на твой бэкенд - УЖЕ ИСПРАВЛЕНО
   const API_URL = 'https://adal-qadam.onrender.com';
 
   useEffect(() => {
@@ -52,6 +50,34 @@ export default function Profile() {
       }
     } catch (e) { 
       console.error("Ошибка истории"); 
+    }
+  };
+
+  // --- ФУНКЦИЯ СМЕНЫ ЛОГИНА ---
+  const handleChangeUsername = async () => {
+    const newName = prompt("Введите новый логин (минимум 3 символа):");
+    if (!newName || newName.length < 3) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_URL}/users/update-username`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ new_username: newName })
+      });
+      if (res.ok) {
+        alert("Логин успешно изменен! Пожалуйста, войдите снова с новым логином.");
+        localStorage.removeItem('token');
+        router.push('/login');
+      } else {
+        const err = await res.json();
+        alert(err.detail || "Этот логин уже занят или произошла ошибка");
+      }
+    } catch (e) { 
+      alert("Ошибка связи с сервером"); 
     }
   };
 
@@ -117,8 +143,16 @@ export default function Profile() {
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-3xl font-bold">{initial}</div>
               <div>
-                <h1 className="text-3xl font-black text-white">{displayName}</h1>
-                <p className="text-blue-300 text-sm bg-blue-900/40 px-3 py-1 rounded-full">{maskEmail(user?.email)}</p>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-black text-white">{displayName}</h1>
+                  {/* КНОПКА РЕДАКТИРОВАНИЯ ЛОГИНА */}
+                  <button onClick={handleChangeUsername} className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-blue-400 group" title="Изменить логин">
+                    <svg className="w-5 h-5 opacity-70 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-blue-300 text-sm bg-blue-900/40 px-3 py-1 rounded-full mt-1 inline-block">{maskEmail(user?.email)}</p>
               </div>
             </div>
             <div className="bg-blue-600/10 border border-blue-500/30 p-6 rounded-2xl">
