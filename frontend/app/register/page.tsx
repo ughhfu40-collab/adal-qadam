@@ -15,7 +15,7 @@ export default function Register() {
   const [timeLeft, setTimeLeft] = useState(60);
   const router = useRouter();
 
-  // URL твоего бэкенда - УЖЕ ИСПРАВЛЕНО
+  
   const API_URL = "https://adal-qadam.onrender.com";
 
   useEffect(() => {

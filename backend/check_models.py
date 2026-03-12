@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Загружаем ключ
+
 load_dotenv(Path(__file__).parent / ".env")
 api_key = os.getenv("GOOGLE_API_KEY")
 

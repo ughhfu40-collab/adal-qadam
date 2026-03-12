@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Тестовая база адвокатов для демонстрации
+
 const LAWYERS = [
   {
     id: 1,
@@ -50,7 +50,7 @@ export default function LawyersPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Фильтрация адвокатов по поиску
+  
   const filteredLawyers = LAWYERS.filter(lawyer => 
     lawyer.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     lawyer.specialization.toLowerCase().includes(searchTerm.toLowerCase())

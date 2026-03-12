@@ -23,7 +23,7 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('models/gemini-flash-latest')
 
-# Установка API ключа Resend
+
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 app = FastAPI()
@@ -78,7 +78,7 @@ try:
 except Exception as e:
     print(f"⚠️ Ошибка RAG: {e}")
 
-# --- ФУНКЦИИ ОТПРАВКИ ЧЕРЕЗ RESEND ---
+
 
 def send_verification_email(to_email: str, code: str):
     print(f"\n{'='*40}\n🔑 КОД РЕГИСТРАЦИИ: {code}\n{'='*40}\n")
@@ -259,7 +259,7 @@ async def analyze(
         except:
             pass
 
-    # --- ЗДЕСЬ ОБНОВЛЕННЫЙ ПРОМПТ С АНАЛИТИКОЙ И ДИСКЛЕЙМЕРОМ ---
+  
     system_instruction = f"""
     Ты — LegalPredict AI, продвинутый цифровой юрист и аналитик РК (в системе Adal Qadam). Твоя главная цель — оценивать перспективы дел и помогать людям составлять ИСКОВЫЕ ЗАЯВЛЕНИЯ по законам РК.
 

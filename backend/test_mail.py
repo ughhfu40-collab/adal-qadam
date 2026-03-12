@@ -16,10 +16,10 @@ print(f"Отправляем с почты: {sender}")
 print("Подключаемся к серверам Google (порт 587)...")
 
 try:
-    # Используем порт 587 и ставим ограничение ожидания в 10 секунд
+    
     with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
         server.ehlo()
-        server.starttls() # Включаем безопасное соединение
+        server.starttls() 
         server.login(sender, password)
         server.send_message(msg)
     print("✅ УСПЕШНО! Письмо улетело. Проверь почту.")

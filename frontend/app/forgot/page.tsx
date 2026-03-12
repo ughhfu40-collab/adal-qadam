@@ -4,14 +4,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState(''); // В твоем бэкенде сброс идет по Email
+  const [email, setEmail] = useState(''); 
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [step, setStep] = useState(1); // 1 = ввод email, 2 = ввод кода и пароля
+  const [step, setStep] = useState(1); 
   const [message, setMessage] = useState('');
   const router = useRouter();
 
-  // Ссылка на твой бэкенд - УЖЕ ИСПРАВЛЕНО
+ 
   const API_URL = 'https://adal-qadam.onrender.com';
 
   const handleRequestCode = async (e: any) => {

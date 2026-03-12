@@ -26,7 +26,7 @@ export default function Home() {
     }
     loadCases();
 
-    // --- ОБРАБОТКА ШАБЛОНОВ ИЗ URL ---
+    
     const params = new URLSearchParams(window.location.search);
     const cId = params.get('case');
     const templatePrompt = params.get('template_prompt');
@@ -34,7 +34,7 @@ export default function Home() {
     if (cId) {
       loadCaseChat(parseInt(cId));
     } else if (templatePrompt) {
-      // Если пришли со страницы шаблонов, вставляем текст и очищаем URL
+      
       setText(templatePrompt);
       setTimeout(() => {
         window.history.replaceState({}, document.title, "/"); 
