@@ -26,7 +26,6 @@ export default function Home() {
     }
     loadCases();
 
-    
     const params = new URLSearchParams(window.location.search);
     const cId = params.get('case');
     const templatePrompt = params.get('template_prompt');
@@ -34,7 +33,6 @@ export default function Home() {
     if (cId) {
       loadCaseChat(parseInt(cId));
     } else if (templatePrompt) {
-      
       setText(templatePrompt);
       setTimeout(() => {
         window.history.replaceState({}, document.title, "/"); 
@@ -180,17 +178,42 @@ export default function Home() {
     setLoading(false);
   };
 
+  // --- ВОЗВРАЩЕННАЯ ФУНКЦИЯ ВЫХОДА ---
   const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/login');
   };
 
+  // --- НОВАЯ ФУНКЦИЯ КРАСИВОГО ТЕКСТА ---
   const formatMessage = (content: string) => {
     if (!content) return '';
     let html = content;
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/(?:^|\n)(?:->|-|\*)\s+(.*)/g, '<br/><li>$1</li>');
-    return html;
+    
+    // Заголовки
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-6 mb-2 text-blue-300">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-black mt-6 mb-3 text-blue-200">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-black mt-6 mb-4 text-white">$1</h1>');
+    
+    // Жирный текст
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+    
+    // Нумерованные списки
+    html = html.replace(/(?:^|\n)(\d+)\.\s+(.*)/g, '<div class="ml-4 mt-2 flex items-start"><span class="mr-2 text-blue-500 font-bold">$1.</span><span>$2</span></div>');
+    
+    // Маркированные списки
+    html = html.replace(/(?:^|\n)(?:->|-|\*)\s+(.*)/g, '<div class="ml-4 mt-2 flex items-start"><span class="mr-2 text-blue-500">•</span><span>$1</span></div>');
+
+    // Переносы строк (абзацы)
+    html = html.replace(/\n/g, '<br/>');
+    
+    // Убираем лишние пустые строки после блоков, чтобы не было гигантских дыр
+    html = html.replace(/<\/div><br\/>/g, '</div>');
+    html = html.replace(/<\/h1><br\/>/g, '</h1>');
+    html = html.replace(/<\/h2><br\/>/g, '</h2>');
+    html = html.replace(/<\/h3><br\/>/g, '</h3>');
+    
+    // Оборачиваем в контейнер с увеличенным интервалом строк для лучшей читаемости
+    return `<div class="leading-relaxed tracking-wide">${html}</div>`;
   };
 
   return (
@@ -218,6 +241,7 @@ export default function Home() {
           </div>
           <div className="p-5 border-t border-blue-500/10 space-y-2">
             <button onClick={() => router.push('/profile')} className="w-full p-3 bg-blue-900/30 text-blue-100 rounded-2xl hover:bg-blue-900/50 transition-all">Личный кабинет</button>
+            {/* Кнопка "Выйти" теперь работает */}
             <button onClick={handleLogout} className="w-full text-gray-500 hover:text-red-400 p-3 transition-all">Выйти</button>
           </div>
         </div>
@@ -251,7 +275,7 @@ export default function Home() {
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
                   <div className={`rounded-3xl p-6 relative ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30 max-w-[80%]' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
-                    <div className="prose prose-invert max-w-none text-white" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
+                    <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                     
                     {msg.role === 'ai' && (
                       <button 
