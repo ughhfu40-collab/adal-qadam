@@ -1,6 +1,41 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '../LanguageContext'; // ИМПОРТ КОНТЕКСТА ЯЗЫКА
+
+// --- СЛОВАРИ ПЕРЕВОДОВ ---
+const translations = {
+  ru: {
+    regTitle: "Регистрация:", step1: "Шаг 1", step2: "Шаг 2",
+    emailTaken: "Email уже занят", noConnection: "Нет связи с сервером",
+    sendError: "Ошибка при отправке кода", fullCodeReq: "Введите полный код",
+    invalidCodeOrLogin: "Неверный код или логин занят", emailPlaceholder: "Ваш Email",
+    passwordPlaceholder: "Придумайте пароль", getCode: "Получить код",
+    alreadyHave: "Уже есть аккаунт?", login: "Войти",
+    codeSentTo: "Код подтверждения отправлен на:", usernamePlaceholder: "Придумайте логин",
+    finish: "Завершить", codeValid: "Код действителен:", resendCode: "Отправить код повторно"
+  },
+  kk: {
+    regTitle: "Тіркелу:", step1: "1-қадам", step2: "2-қадам",
+    emailTaken: "Email бос емес", noConnection: "Сервермен байланыс жоқ",
+    sendError: "Кодты жіберу қатесі", fullCodeReq: "Кодты толық енгізіңіз",
+    invalidCodeOrLogin: "Код қате немесе логин бос емес", emailPlaceholder: "Сіздің Email",
+    passwordPlaceholder: "Құпиясөз ойлап табыңыз", getCode: "Кодты алу",
+    alreadyHave: "Аккаунтыңыз бар ма?", login: "Кіру",
+    codeSentTo: "Растау коды жіберілді:", usernamePlaceholder: "Логин ойлап табыңыз",
+    finish: "Аяқтау", codeValid: "Код жарамды:", resendCode: "Кодты қайта жіберу"
+  },
+  en: {
+    regTitle: "Registration:", step1: "Step 1", step2: "Step 2",
+    emailTaken: "Email is already taken", noConnection: "No connection to server",
+    sendError: "Error sending code", fullCodeReq: "Enter the full code",
+    invalidCodeOrLogin: "Invalid code or username is taken", emailPlaceholder: "Your Email",
+    passwordPlaceholder: "Create a password", getCode: "Get code",
+    alreadyHave: "Already have an account?", login: "Log in",
+    codeSentTo: "Verification code sent to:", usernamePlaceholder: "Create a username",
+    finish: "Finish", codeValid: "Code valid for:", resendCode: "Resend code"
+  }
+};
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -15,7 +50,10 @@ export default function Register() {
   const [timeLeft, setTimeLeft] = useState(60);
   const router = useRouter();
 
-  
+  // ПОДКЛЮЧАЕМ ЯЗЫК
+  const { lang } = useLanguage();
+  const t = translations[lang];
+
   const API_URL = "https://adal-qadam.onrender.com";
 
   useEffect(() => {
@@ -57,9 +95,9 @@ export default function Register() {
         setTimeLeft(60);
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data.detail || 'Email уже занят');
+        setError(data.detail || t.emailTaken);
       }
-    } catch (err) { setError('Нет связи с сервером'); }
+    } catch (err) { setError(t.noConnection); }
   };
 
   const handleResendCode = async () => {
@@ -74,8 +112,8 @@ export default function Register() {
       if (res.ok) {
         setTimeLeft(60);
         inputRefs.current[0]?.focus();
-      } else setError('Ошибка при отправке кода');
-    } catch (err) { setError('Нет связи с сервером'); }
+      } else setError(t.sendError);
+    } catch (err) { setError(t.noConnection); }
   };
 
   const handleFinal = async (e: React.FormEvent) => {
@@ -83,12 +121,11 @@ export default function Register() {
     setError('');
     const codeStr = codeDigits.join('');
     if (codeStr.length !== 6) {
-      setError('Введите полный код');
+      setError(t.fullCodeReq);
       return;
     }
 
     try {
-      // ПУТЬ ИСПРАВЛЕН НА /register/final
       const res = await fetch(`${API_URL}/register/final`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,9 +135,9 @@ export default function Register() {
         router.push('/login');
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data.detail || 'Неверный код или логин занят');
+        setError(data.detail || t.invalidCodeOrLogin);
       }
-    } catch (err) { setError('Нет связи с сервером'); }
+    } catch (err) { setError(t.noConnection); }
   };
 
   const formatTime = (seconds: number) => {
@@ -121,7 +158,7 @@ export default function Register() {
           </h1>
           <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full backdrop-blur-md">
             <span className="text-blue-300 text-[11px] font-bold uppercase tracking-[0.2em]">
-              Регистрация: {step === 1 ? 'Шаг 1' : 'Шаг 2'}
+              {t.regTitle} {step === 1 ? t.step1 : t.step2}
             </span>
           </div>
         </div>
@@ -135,22 +172,22 @@ export default function Register() {
         {step === 1 ? (
           <>
             <form onSubmit={handleStep1} className="space-y-4">
-              <input type="email" required placeholder="Ваш Email" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={email} onChange={e => setEmail(e.target.value)} />
-              <input type="password" required placeholder="Придумайте пароль" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
+              <input type="email" required placeholder={t.emailPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={email} onChange={e => setEmail(e.target.value)} />
+              <input type="password" required placeholder={t.passwordPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
               <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2">
-                Получить код
+                {t.getCode}
               </button>
             </form>
             <div className="mt-8 text-center pt-6 border-t border-white/10">
-              <p className="text-gray-400 text-sm font-light">Уже есть аккаунт?{' '}
-                <button onClick={() => router.push('/login')} className="text-blue-400 font-bold hover:text-blue-300 transition-all">Войти</button>
+              <p className="text-gray-400 text-sm font-light">{t.alreadyHave}{' '}
+                <button onClick={() => router.push('/login')} className="text-blue-400 font-bold hover:text-blue-300 transition-all">{t.login}</button>
               </p>
             </div>
           </>
         ) : (
           <div className="space-y-6">
             <div className="text-center bg-blue-500/10 border border-blue-400/20 p-4 rounded-2xl backdrop-blur-md">
-              <p className="text-gray-300 text-sm mb-1 font-light">Код подтверждения отправлен на:</p>
+              <p className="text-gray-300 text-sm mb-1 font-light">{t.codeSentTo}</p>
               <p className="text-blue-200 font-semibold tracking-wide">{email}</p>
             </div>
 
@@ -170,19 +207,19 @@ export default function Register() {
                 ))}
               </div>
 
-              <input type="text" required placeholder="Придумайте логин" className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
+              <input type="text" required placeholder={t.usernamePlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
               
               <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md">
-                Завершить
+                {t.finish}
               </button>
             </form>
 
             <div className="text-center pt-2">
               {timeLeft > 0 ? (
-                <p className="text-gray-400 text-sm font-light">Код действителен: <span className="text-blue-400 font-mono font-bold">{formatTime(timeLeft)}</span></p>
+                <p className="text-gray-400 text-sm font-light">{t.codeValid} <span className="text-blue-400 font-mono font-bold">{formatTime(timeLeft)}</span></p>
               ) : (
                 <button onClick={handleResendCode} className="text-blue-400 text-sm font-bold hover:text-blue-300 transition-all">
-                  Отправить код повторно
+                  {t.resendCode}
                 </button>
               )}
             </div>
