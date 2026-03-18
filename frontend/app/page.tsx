@@ -165,10 +165,23 @@ export default function Home() {
     const token = localStorage.getItem('token');
     const formData = new FormData();
 
-    if (text) formData.append('text', text);
+    // --- НОВОЕ: СКРЫТАЯ КОМАНДА ДЛЯ ИИ В ЗАВИСИМОСТИ ОТ ЯЗЫКА ---
+    let aiPrompt = text;
+    if (text) {
+      if (lang === 'kk') {
+        aiPrompt = `[Міндетті түрде қазақ тілінде жауап бер] ${text}`;
+      } else if (lang === 'en') {
+        aiPrompt = `[Please answer strictly in English] ${text}`;
+      } else {
+        aiPrompt = `[Отвечай на русском языке] ${text}`;
+      }
+    }
+
+    if (text) formData.append('text', aiPrompt);
     if (file) formData.append('file', file);
     if (activeCaseId) formData.append('case_id', activeCaseId.toString());
 
+    // В интерфейсе показываем просто текст юзера, без команды
     const newMsg = { role: 'user', content: text || `[Прикреплен файл: ${file?.name}]` };
     setMessages(prev => [...prev, newMsg]);
 
