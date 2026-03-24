@@ -31,7 +31,7 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isListening, setIsListening] = useState(false);
   
-  const { lang } = useLanguage(); // ТОЛЬКО ЧИТАЕМ ЯЗЫК, КНОПКИ ТУТ НЕТ
+  const { lang } = useLanguage(); 
   const t = translations[lang];
   
   const router = useRouter();
@@ -60,10 +60,14 @@ export default function Home() {
       }, 500);
     }
 
-    const script = document.createElement('script');
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    script.async = true;
-    document.body.appendChild(script);
+    // ИСПРАВЛЕНИЕ 1: Проверяем, не загружен ли уже скрипт
+    if (!document.getElementById('html2pdf-script')) {
+      const script = document.createElement('script');
+      script.id = 'html2pdf-script';
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -72,30 +76,44 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  const downloadPDF = (content: string, title: string) => {
-    const element = document.createElement('div');
-    element.innerHTML = `
-      <div style="padding: 40px; font-family: Arial, sans-serif; color: black; background: white;">
-        <h1 style="text-align: center; color: #1e3a8a;">ADAL QADAM</h1>
-        <p style="text-align: center; font-size: 12px; color: #666;">Юридический анализ и документы</p>
-        <hr style="margin: 20px 0;"/>
-        <div style="line-height: 1.6; font-size: 14px;">${content}</div>
-        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; font-size: 10px; color: #777;">
-          <p><strong>Отказ от ответственности:</strong> Данный документ сформирован ИИ Adal Qadam.
-          Результат носит справочный характер и не является юридическим заключением или гарантией исхода дела.
-          Сервис не оказывает юридическую помощь в смысле Закона РК «Об адвокатской деятельности».</p>
+  // ИСПРАВЛЕНИЕ 2: Улучшенная функция скачивания с отловом ошибок
+  const downloadPDF = async (content: string, title: string) => {
+    if (typeof window === 'undefined') return;
+
+    if (!(window as any).html2pdf) {
+      alert("⏳ Библиотека для PDF еще подгружается. Пожалуйста, подождите секунду и нажмите снова!");
+      return;
+    }
+
+    try {
+      const element = document.createElement('div');
+      element.innerHTML = `
+        <div style="padding: 40px; font-family: Arial, sans-serif; color: black; background: white;">
+          <h1 style="text-align: center; color: #1e3a8a;">ADAL QADAM</h1>
+          <p style="text-align: center; font-size: 12px; color: #666;">Юридический анализ и документы</p>
+          <hr style="margin: 20px 0;"/>
+          <div style="line-height: 1.6; font-size: 14px;">${content}</div>
+          <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; font-size: 10px; color: #777;">
+            <p><strong>Отказ от ответственности:</strong> Данный документ сформирован ИИ Adal Qadam.
+            Результат носит справочный характер и не является юридическим заключением или гарантией исхода дела.
+            Сервис не оказывает юридическую помощь в смысле Закона РК «Об адвокатской деятельности».</p>
+          </div>
         </div>
-      </div>
-    `;
-    const opt = {
-      margin: 0.5,
-      filename: `Adal_Qadam_${title || 'document'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    // @ts-ignore
-    window.html2pdf().set(opt).from(element).save();
+      `;
+      
+      const opt = {
+        margin: 0.5,
+        filename: `Adal_Qadam_${title || 'document'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      
+      await (window as any).html2pdf().set(opt).from(element).save();
+    } catch (error) {
+      console.error("Ошибка при генерации PDF:", error);
+      alert("❌ Произошла ошибка при создании PDF-файла. Попробуйте перезагрузить страницу.");
+    }
   };
 
   const toggleListening = () => {
@@ -165,7 +183,6 @@ export default function Home() {
     const token = localStorage.getItem('token');
     const formData = new FormData();
 
-    // --- НОВОЕ: СКРЫТАЯ КОМАНДА ДЛЯ ИИ В ЗАВИСИМОСТИ ОТ ЯЗЫКА ---
     let aiPrompt = text;
     if (text) {
       if (lang === 'kk') {
@@ -181,7 +198,6 @@ export default function Home() {
     if (file) formData.append('file', file);
     if (activeCaseId) formData.append('case_id', activeCaseId.toString());
 
-    // В интерфейсе показываем просто текст юзера, без команды
     const newMsg = { role: 'user', content: text || `[Прикреплен файл: ${file?.name}]` };
     setMessages(prev => [...prev, newMsg]);
 
