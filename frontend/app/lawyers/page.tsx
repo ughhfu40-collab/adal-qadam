@@ -1,228 +1,152 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLanguage } from '../LanguageContext'; // ИМПОРТ КОНТЕКСТА
+import { useLanguage } from '../LanguageContext';
 
-// --- СЛОВАРИ ПЕРЕВОДОВ ---
-const translations = {
+const uiTranslations = {
   ru: {
-    auth: "Авторизация", recovery: "Восстановление пароля",
-    invalidCreds: "Неверный логин или пароль", noConn: "Нет связи с сервером",
-    codeSent: "Код восстановления отправлен на почту", userNotFound: "Пользователь с таким email не найден",
-    fullCodeReq: "Введите полный код", pwdChanged: "Пароль успешно изменен! Теперь вы можете войти.",
-    invalidCode: "Неверный код восстановления", usernamePlaceholder: "Ваш логин",
-    pwdPlaceholder: "Пароль", forgot: "Забыли?", loginBtn: "Войти",
-    noAccount: "Нет аккаунта?", createProfile: "Создать профиль",
-    enterEmail: "Введите ваш Email для восстановления доступа.", emailPlaceholder: "Ваш Email",
-    sendCode: "Отправить код", goBack: "Вернуться назад",
-    newPwdPlaceholder: "Новый пароль", savePwd: "Сохранить пароль", cancel: "Отмена"
+    title: "Каталог адвокатов",
+    subtitle: "Проверенные специалисты из Республиканской коллегии адвокатов",
+    toProfile: "В профиль",
+    searchPlaceholder: "Поиск по ФИО или специализации (например, уголовные дела, ДТП)...",
+    experience: "Опыт:",
+    phone: "Телефон:",
+    consultBtn: "Позвонить",
+    notFound: "Адвокаты по вашему запросу не найдены.",
+    years: "лет"
   },
   kk: {
-    auth: "Авторизация", recovery: "Құпиясөзді қалпына келтіру",
-    invalidCreds: "Қате логин немесе құпиясөз", noConn: "Сервермен байланыс жоқ",
-    codeSent: "Қалпына келтіру коды поштаға жіберілді", userNotFound: "Бұл email бар пайдаланушы табылмады",
-    fullCodeReq: "Кодты толық енгізіңіз", pwdChanged: "Құпиясөз сәтті өзгертілді! Енді жүйеге кіре аласыз.",
-    invalidCode: "Қалпына келтіру коды қате", usernamePlaceholder: "Сіздің логиніңіз",
-    pwdPlaceholder: "Құпиясөз", forgot: "Ұмыттыңыз ба?", loginBtn: "Кіру",
-    noAccount: "Аккаунт жоқ па?", createProfile: "Профиль құру",
-    enterEmail: "Қол жеткізуді қалпына келтіру үшін Email-ді енгізіңіз.", emailPlaceholder: "Сіздің Email",
-    sendCode: "Кодты жіберу", goBack: "Артқа қайту",
-    newPwdPlaceholder: "Жаңа құпиясөз", savePwd: "Құпиясөзді сақтау", cancel: "Болдырмау"
+    title: "Адвокаттар каталогы",
+    subtitle: "Республикалық адвокаттар алқасының тексерілген мамандары",
+    toProfile: "Профильге",
+    searchPlaceholder: "Аты-жөні немесе мамандануы бойынша іздеу (мысалы, қылмыстық істер, жол апаты)...",
+    experience: "Тәжірибесі:",
+    phone: "Телефон:",
+    consultBtn: "Қоңырау шалу",
+    notFound: "Сұрауыңыз бойынша адвокаттар табылмады.",
+    years: "жыл"
   },
   en: {
-    auth: "Authorization", recovery: "Password Recovery",
-    invalidCreds: "Invalid username or password", noConn: "No connection to server",
-    codeSent: "Recovery code sent to email", userNotFound: "User with this email not found",
-    fullCodeReq: "Enter the full code", pwdChanged: "Password successfully changed! You can now log in.",
-    invalidCode: "Invalid recovery code", usernamePlaceholder: "Your username",
-    pwdPlaceholder: "Password", forgot: "Forgot?", loginBtn: "Log in",
-    noAccount: "No account?", createProfile: "Create profile",
-    enterEmail: "Enter your Email to restore access.", emailPlaceholder: "Your Email",
-    sendCode: "Send code", goBack: "Go back",
-    newPwdPlaceholder: "New password", savePwd: "Save password", cancel: "Cancel"
+    title: "Lawyers Directory",
+    subtitle: "Verified specialists from the Republican Bar Association",
+    toProfile: "To Profile",
+    searchPlaceholder: "Search by name or specialization (e.g., criminal cases, accident)...",
+    experience: "Experience:",
+    phone: "Phone:",
+    consultBtn: "Call",
+    notFound: "No lawyers found for your query.",
+    years: "years"
   }
 };
 
-export default function Login() {
-  const [view, setView] = useState<'login' | 'forgot' | 'reset'>('login');
-  
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  
-  const [resetEmail, setResetEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  
-  const [resetDigits, setResetDigits] = useState<string[]>(Array(6).fill(''));
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
-  const [error, setError] = useState('');
-  const [msg, setMsg] = useState('');
+// Реалистичные мок-данные для MVP (12 специалистов)
+const lawyersList = [
+  { id: 1, name: "Оспанов Данияр", spec: "Уголовное право, Экономические преступления", exp: 15, phone: "+7 (701) 123-45-67", desc: "Бывший следователь по особо важным делам. Специализируется на защите бизнеса от проверок и сложных уголовных процессах.", img: "Daniyar" },
+  { id: 2, name: "Смирнова Елена", spec: "Семейное право, Раздел имущества", exp: 12, phone: "+7 (777) 987-65-43", desc: "Более 500 успешных бракоразводных процессов. Помогает с взысканием алиментов и определением места жительства детей.", img: "Elena" },
+  { id: 3, name: "Болатов Аскар", spec: "ДТП, Страховые споры", exp: 8, phone: "+7 (705) 111-22-33", desc: "Взыскание максимального ущерба с виновников ДТП и страховых компаний. Оспаривание штрафов Сергек.", img: "Askar" },
+  { id: 4, name: "Нурланова Айгерим", spec: "Трудовые споры", exp: 10, phone: "+7 (702) 444-55-66", desc: "Защита прав работников при незаконном увольнении, невыплате зарплаты и производственных травмах.", img: "Aigerim" },
+  { id: 5, name: "Иванов Михаил", spec: "Гражданское право, Долги", exp: 20, phone: "+7 (701) 333-77-88", desc: "Взыскание долгов по распискам, отмена судебных приказов, работа с ЧСИ и коллекторами.", img: "Mikhail" },
+  { id: 6, name: "Калиев Тимур", spec: "Недвижимость и Земля", exp: 14, phone: "+7 (778) 555-99-00", desc: "Сопровождение сделок купли-продажи, узаконивание перепланировок, споры с застройщиками (ЖК).", img: "Timur" },
+  { id: 7, name: "Алиева Динара", spec: "Медицинское право", exp: 9, phone: "+7 (707) 222-11-44", desc: "Привлечение к ответственности за врачебные ошибки, взыскание морального и материального вреда с клиник.", img: "Dinara" },
+  { id: 8, name: "Пак Александр", spec: "IT и Авторское право", exp: 7, phone: "+7 (700) 888-44-22", desc: "Регистрация товарных знаков, патенты, составление договоров для IT-стартапов и защита кода.", img: "Alex" },
+  { id: 9, name: "Сатпаев Ерлан", spec: "Налоговое право, Таможня", exp: 18, phone: "+7 (701) 666-33-11", desc: "Оспаривание налоговых уведомлений, разблокировка счетов, защита ТОО и ИП при аудите.", img: "Erlan" },
+  { id: 10, name: "Жакупова Асель", spec: "Защита прав потребителей", exp: 6, phone: "+7 (705) 777-88-99", desc: "Возврат бракованных товаров, суды с авиакомпаниями и турфирмами, компенсации за некачественные услуги.", img: "Asel" },
+  { id: 11, name: "Цой Вячеслав", spec: "Банкротство физических лиц", exp: 11, phone: "+7 (777) 123-88-55", desc: "Полное списание кредитов и долгов по новому закону РК. Сопровождение процедуры от А до Я.", img: "Slava" },
+  { id: 12, name: "Ким Наталья", spec: "Наследственные дела", exp: 16, phone: "+7 (702) 999-00-11", desc: "Восстановление сроков принятия наследства, оспаривание завещаний, споры между наследниками.", img: "Natalya" }
+];
+
+export default function LawyersPage() {
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const { lang } = useLanguage(); 
+  const t = uiTranslations[lang as keyof typeof uiTranslations] || uiTranslations.ru;
 
-  // ПОДКЛЮЧАЕМ ЯЗЫК
-  const { lang } = useLanguage();
-  const t = translations[lang];
-
-  const API_URL = "https://adal-qadam.onrender.com";
-
-  const handleDigitChange = (index: number, value: string) => {
-    if (value.length > 1 || (value && !/^\d+$/.test(value))) return;
-    const newDigits = [...resetDigits];
-    newDigits[index] = value;
-    setResetDigits(newDigits);
-    
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !resetDigits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-
-    try {
-      const res = await fetch(`${API_URL}/token`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.access_token);
-        router.push('/');
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        setError(errData.detail || t.invalidCreds);
-      }
-    } catch (err) { 
-      setError(t.noConn); 
-    }
-  };
-
-  const handleForgotSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setMsg('');
-    try {
-      const res = await fetch(`${API_URL}/password-reset/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail }),
-      });
-      if (res.ok) {
-        setView('reset');
-        setResetDigits(Array(6).fill(''));
-        setMsg(t.codeSent);
-      } else {
-        setError(t.userNotFound);
-      }
-    } catch (err) { setError(t.noConn); }
-  };
-
-  const handleResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const codeStr = resetDigits.join('');
-    if (codeStr.length !== 6) {
-      setError(t.fullCodeReq);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/password-reset/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail, code: codeStr, new_password: newPassword }),
-      });
-      if (res.ok) {
-        setView('login');
-        setMsg(t.pwdChanged);
-        setResetDigits(Array(6).fill(''));
-        setNewPassword('');
-      } else {
-        setError(t.invalidCode);
-      }
-    } catch (err) { setError(t.noConn); }
-  };
+  const filteredLawyers = lawyersList.filter(lawyer =>
+    lawyer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lawyer.spec.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-[#060b19] flex items-center justify-center p-4 font-sans relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none" />
-      
-      <div className="w-full max-w-md z-10 bg-white/[0.03] backdrop-blur-2xl border border-white/10 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] transition-all duration-300 relative text-white">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black tracking-[0.2em] text-blue-200 drop-shadow-[0_0_15px_rgba(191,219,254,0.8)] uppercase mb-4">
-            Adal Qadam
-          </h1>
-          <div className="inline-block px-4 py-1.5 bg-blue-500/10 border border-blue-400/20 rounded-full backdrop-blur-md">
-            <span className="text-blue-300 text-[11px] font-bold uppercase tracking-[0.2em]">
-              {view === 'login' ? t.auth : t.recovery}
-            </span>
+    <div className="min-h-screen bg-[#080f1e] text-gray-200 p-6 md:p-12 relative overflow-hidden font-sans">
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/15 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="flex justify-between items-center mb-10 border-b border-blue-500/20 pb-6">
+          <div>
+            <h1 className="text-3xl font-black text-white flex items-center gap-3">
+              <span className="text-blue-500">⚖️</span> {t.title}
+            </h1>
+            <p className="text-gray-400 mt-2">{t.subtitle}</p>
           </div>
+          <button
+            onClick={() => router.push('/profile')}
+            className="px-5 py-2.5 bg-[#0c1527] border border-blue-500/30 text-blue-400 rounded-xl hover:bg-blue-600/20 transition-all font-bold uppercase text-sm tracking-wider"
+          >
+            {t.toProfile}
+          </button>
         </div>
 
-        {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-2xl text-center backdrop-blur-md">{error}</div>}
-        {msg && <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm rounded-2xl text-center backdrop-blur-md">{msg}</div>}
+        <div className="mb-8 relative max-w-2xl">
+          <input
+            type="text"
+            placeholder={t.searchPlaceholder}
+            className="w-full bg-[#0c1527] border border-blue-500/20 rounded-2xl p-4 pl-12 text-white outline-none focus:border-blue-500 transition-all shadow-lg"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <svg className="w-6 h-6 text-gray-500 absolute left-4 top-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
 
-        {view === 'login' && (
-          <>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input type="text" required placeholder={t.usernamePlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
-              <div className="relative">
-                <input type="password" required placeholder={t.pwdPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
-                <button type="button" onClick={() => { setView('forgot'); setError(''); setMsg(''); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-blue-400 hover:text-blue-300 font-medium">{t.forgot}</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredLawyers.map((lawyer) => (
+            <div key={lawyer.id} className="bg-[#0f192e] border border-blue-500/10 rounded-3xl p-6 hover:border-blue-500/40 transition-all flex flex-col h-full shadow-lg group">
+              <div className="flex items-center gap-4 mb-5">
+                <img 
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${lawyer.img}&backgroundColor=1e3a8a&textColor=ffffff`} 
+                  alt={lawyer.name} 
+                  className="w-16 h-16 rounded-full border-2 border-blue-500/30 shadow-md group-hover:scale-105 transition-transform"
+                />
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">{lawyer.name}</h3>
+                  <span className="inline-block mt-1 text-[10px] font-bold text-blue-300 bg-blue-900/30 px-2 py-0.5 rounded-md uppercase tracking-wide">
+                    {t.experience} {lawyer.exp} {t.years}
+                  </span>
+                </div>
               </div>
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2">{t.loginBtn}</button>
-            </form>
-            <div className="mt-8 text-center pt-6 border-t border-white/10">
-              <p className="text-gray-400 text-sm">{t.noAccount}{' '}
-                <button onClick={() => router.push('/register')} className="text-blue-400 font-bold hover:text-blue-300 transition-all">{t.createProfile}</button>
-              </p>
-            </div>
-          </>
-        )}
 
-        {view === 'forgot' && (
-          <form onSubmit={handleForgotSubmit} className="space-y-4">
-            <p className="text-gray-300 text-sm mb-4 text-center">{t.enterEmail}</p>
-            <input type="email" required placeholder={t.emailPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
-            <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl">{t.sendCode}</button>
-            <button type="button" onClick={() => { setView('login'); setError(''); }} className="w-full text-gray-400 text-sm hover:text-white mt-3">{t.goBack}</button>
-          </form>
-        )}
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-blue-400 mb-2">{lawyer.spec}</p>
+                <p className="text-gray-400 text-xs leading-relaxed flex-grow">{lawyer.desc}</p>
+              </div>
 
-        {view === 'reset' && (
-          <form onSubmit={handleResetSubmit} className="space-y-5">
-            <div className="flex justify-center gap-3">
-                {resetDigits.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={el => { inputRefs.current[idx] = el; }}
-                    type="text"
-                    maxLength={1}
-                    className="w-12 h-12 bg-black/20 border border-white/10 text-white text-center text-xl rounded-full focus:border-blue-500/50 outline-none"
-                    value={digit}
-                    onChange={e => handleDigitChange(idx, e.target.value)}
-                    onKeyDown={e => handleKeyDown(idx, e)}
-                  />
-                ))}
+              <div className="mt-auto pt-4 border-t border-white/5 space-y-3">
+                <div className="flex items-center gap-2 text-gray-300 text-sm">
+                  <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  {lawyer.phone}
+                </div>
+                
+                <a 
+                  href={`tel:${lawyer.phone.replace(/[^0-9+]/g, '')}`}
+                  className="w-full block text-center bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-xl font-bold uppercase text-xs tracking-wider transition-colors shadow-[0_0_15px_rgba(37,99,235,0.2)]"
+                >
+                  {t.consultBtn}
+                </a>
+              </div>
             </div>
-            <input type="password" required placeholder={t.newPwdPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md">
-              {t.savePwd}
-            </button>
-            <button type="button" onClick={() => { setView('login'); setError(''); setMsg(''); }} className="w-full text-gray-400 text-sm hover:text-white mt-3">{t.cancel}</button>
-          </form>
-        )}
+          ))}
+
+          {filteredLawyers.length === 0 && (
+            <div className="col-span-full text-center py-20">
+              <p className="text-gray-500 text-xl">{t.notFound}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
