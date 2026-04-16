@@ -45,6 +45,7 @@ const translations = {
 
 export default function Login() {
   const [view, setView] = useState<'login' | 'forgot' | 'reset'>('login');
+  const [isPending, setIsPending] = useState(false); // ДОБАВЛЕНО ДЛЯ БЛОКИРОВКИ
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -84,6 +85,8 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
+    setIsPending(true);
     setError('');
     const formData = new FormData();
     formData.append('username', username);
@@ -104,11 +107,15 @@ export default function Login() {
       }
     } catch (err) { 
       setError(t.noConn); 
+    } finally {
+      setIsPending(false);
     }
   };
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
+    setIsPending(true);
     setError('');
     setMsg('');
     try {
@@ -125,10 +132,12 @@ export default function Login() {
         setError(t.userNotFound);
       }
     } catch (err) { setError(t.noConn); }
+    finally { setIsPending(false); }
   };
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
     setError('');
     const codeStr = resetDigits.join('');
     if (codeStr.length !== 6) {
@@ -136,6 +145,7 @@ export default function Login() {
       return;
     }
 
+    setIsPending(true);
     try {
       const res = await fetch(`${API_URL}/password-reset/confirm`, {
         method: 'POST',
@@ -151,6 +161,7 @@ export default function Login() {
         setError(t.invalidCode);
       }
     } catch (err) { setError(t.noConn); }
+    finally { setIsPending(false); }
   };
 
   return (
@@ -181,7 +192,9 @@ export default function Login() {
                 <input type="password" required placeholder={t.pwdPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
                 <button type="button" onClick={() => { setView('forgot'); setError(''); setMsg(''); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-blue-400 hover:text-blue-300 font-medium">{t.forgot}</button>
               </div>
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2">{t.loginBtn}</button>
+              <button type="submit" disabled={isPending} className={`w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2 ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                {isPending ? '...' : t.loginBtn}
+              </button>
             </form>
             <div className="mt-8 text-center pt-6 border-t border-white/10">
               <p className="text-gray-400 text-sm">{t.noAccount}{' '}
@@ -195,7 +208,9 @@ export default function Login() {
           <form onSubmit={handleForgotSubmit} className="space-y-4">
             <p className="text-gray-300 text-sm mb-4 text-center">{t.enterEmail}</p>
             <input type="email" required placeholder={t.emailPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
-            <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl">{t.sendCode}</button>
+            <button type="submit" disabled={isPending} className={`w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              {isPending ? '...' : t.sendCode}
+            </button>
             <button type="button" onClick={() => { setView('login'); setError(''); }} className="w-full text-gray-400 text-sm hover:text-white mt-3">{t.goBack}</button>
           </form>
         )}
@@ -217,8 +232,8 @@ export default function Login() {
                 ))}
             </div>
             <input type="password" required placeholder={t.newPwdPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md">
-              {t.savePwd}
+            <button type="submit" disabled={isPending} className={`w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              {isPending ? '...' : t.savePwd}
             </button>
             <button type="button" onClick={() => { setView('login'); setError(''); setMsg(''); }} className="w-full text-gray-400 text-sm hover:text-white mt-3">{t.cancel}</button>
           </form>

@@ -39,7 +39,6 @@ const uiTranslations = {
   }
 };
 
-// Реалистичные мок-данные для MVP (12 специалистов)
 const lawyersList = [
   { id: 1, name: "Оспанов Данияр", spec: "Уголовное право, Экономические преступления", exp: 15, phone: "+7 (701) 123-45-67", desc: "Бывший следователь по особо важным делам. Специализируется на защите бизнеса от проверок и сложных уголовных процессах.", img: "Daniyar" },
   { id: 2, name: "Смирнова Елена", spec: "Семейное право, Раздел имущества", exp: 12, phone: "+7 (777) 987-65-43", desc: "Более 500 успешных бракоразводных процессов. Помогает с взысканием алиментов и определением места жительства детей.", img: "Elena" },
@@ -72,7 +71,7 @@ export default function LawyersPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/15 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="flex justify-between items-center mb-10 border-b border-blue-500/20 pb-6">
           <div>
             <h1 className="text-3xl font-black text-white flex items-center gap-3">
@@ -101,7 +100,8 @@ export default function LawyersPage() {
           </svg>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* ИЗМЕНЕНИЕ ЗДЕСЬ: убрали xl:grid-cols-4, теперь максимум 3 колонки (lg:grid-cols-3) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLawyers.map((lawyer) => (
             <div key={lawyer.id} className="bg-[#0f192e] border border-blue-500/10 rounded-3xl p-6 hover:border-blue-500/40 transition-all flex flex-col h-full shadow-lg group">
               <div className="flex items-center gap-4 mb-5">

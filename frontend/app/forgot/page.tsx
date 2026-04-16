@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useLanguage } from '../LanguageContext'; // ИМПОРТ КОНТЕКСТА
+import { useLanguage } from '../LanguageContext'; 
 
-// --- СЛОВАРИ ПЕРЕВОДОВ ---
 const translations = {
   ru: {
     codeSent: "Код отправлен! Проверь почту (или логи бэкенда).",
@@ -20,7 +19,8 @@ const translations = {
     codePlaceholder: "Код",
     newPwdPlaceholder: "Новый пароль",
     savePwdBtn: "Сохранить пароль",
-    backToLogin: "Вернуться ко входу"
+    backToLogin: "Вернуться ко входу",
+    sending: "Отправка..."
   },
   kk: {
     codeSent: "Код жіберілді! Поштаңызды тексеріңіз.",
@@ -36,7 +36,8 @@ const translations = {
     codePlaceholder: "Код",
     newPwdPlaceholder: "Жаңа құпиясөз",
     savePwdBtn: "Құпиясөзді сақтау",
-    backToLogin: "Кіру бетіне оралу"
+    backToLogin: "Кіру бетіне оралу",
+    sending: "Жіберілуде..."
   },
   en: {
     codeSent: "Code sent! Check your email.",
@@ -52,7 +53,8 @@ const translations = {
     codePlaceholder: "Code",
     newPwdPlaceholder: "New password",
     savePwdBtn: "Save password",
-    backToLogin: "Back to login"
+    backToLogin: "Back to login",
+    sending: "Sending..."
   }
 };
 
@@ -62,16 +64,22 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [step, setStep] = useState(1); 
   const [message, setMessage] = useState('');
+  const [isPending, setIsPending] = useState(false); // БЛОКИРОВКА КНОПКИ
   const router = useRouter();
 
-  // ПОДКЛЮЧАЕМ ЯЗЫК
   const { lang } = useLanguage();
-  const t = translations[lang];
+  // @ts-ignore
+  const t = translations[lang] || translations.ru;
 
   const API_URL = 'https://adal-qadam.onrender.com';
 
   const handleRequestCode = async (e: any) => {
     e.preventDefault();
+    if (isPending) return; // Если уже идет запрос, ничего не делаем
+
+    setIsPending(true);
+    setMessage(''); 
+
     try {
       const res = await fetch(`${API_URL}/password-reset/request`, {
         method: 'POST',
@@ -86,6 +94,9 @@ export default function ForgotPasswordPage() {
       }
     } catch (err) {
       setMessage(t.noConnection);
+    } finally {
+      // Разблокируем кнопку через 10 секунд для повторной попытки
+      setTimeout(() => setIsPending(false), 10000);
     }
   };
 
@@ -123,7 +134,13 @@ export default function ForgotPasswordPage() {
               className="w-full p-3 mb-6 bg-[#1e293b] rounded-xl border border-gray-700 outline-none focus:border-blue-500"
               value={email} onChange={(e) => setEmail(e.target.value)} 
             />
-            <button onClick={handleRequestCode} className="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold transition-colors">{t.getCodeBtn}</button>
+            <button 
+              onClick={handleRequestCode} 
+              disabled={isPending}
+              className={`w-full p-3 rounded-xl font-bold transition-all ${isPending ? 'bg-gray-600 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500'}`}
+            >
+              {isPending ? t.sending : t.getCodeBtn}
+            </button>
           </>
         ) : (
           <>

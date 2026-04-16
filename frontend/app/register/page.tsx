@@ -43,6 +43,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [isPending, setIsPending] = useState(false); // ДОБАВЛЕНО
   
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(6).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -83,6 +84,8 @@ export default function Register() {
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
+    setIsPending(true);
     setError('');
     try {
       const res = await fetch(`${API_URL}/register/step1`, {
@@ -98,9 +101,12 @@ export default function Register() {
         setError(data.detail || t.emailTaken);
       }
     } catch (err) { setError(t.noConnection); }
+    finally { setIsPending(false); }
   };
 
   const handleResendCode = async () => {
+    if (isPending) return;
+    setIsPending(true);
     setError('');
     setCodeDigits(Array(6).fill(''));
     try {
@@ -114,10 +120,12 @@ export default function Register() {
         inputRefs.current[0]?.focus();
       } else setError(t.sendError);
     } catch (err) { setError(t.noConnection); }
+    finally { setIsPending(false); }
   };
 
   const handleFinal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isPending) return;
     setError('');
     const codeStr = codeDigits.join('');
     if (codeStr.length !== 6) {
@@ -125,6 +133,7 @@ export default function Register() {
       return;
     }
 
+    setIsPending(true);
     try {
       const res = await fetch(`${API_URL}/register/final`, {
         method: 'POST',
@@ -138,6 +147,7 @@ export default function Register() {
         setError(data.detail || t.invalidCodeOrLogin);
       }
     } catch (err) { setError(t.noConnection); }
+    finally { setIsPending(false); }
   };
 
   const formatTime = (seconds: number) => {
@@ -174,8 +184,8 @@ export default function Register() {
             <form onSubmit={handleStep1} className="space-y-4">
               <input type="email" required placeholder={t.emailPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={email} onChange={e => setEmail(e.target.value)} />
               <input type="password" required placeholder={t.passwordPlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none transition-all placeholder:text-gray-500/70 shadow-inner" value={password} onChange={e => setPassword(e.target.value)} />
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2">
-                {t.getCode}
+              <button type="submit" disabled={isPending} className={`w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md mt-2 disabled:opacity-50 disabled:cursor-not-allowed`}>
+                {isPending ? '...' : t.getCode}
               </button>
             </form>
             <div className="mt-8 text-center pt-6 border-t border-white/10">
@@ -209,8 +219,8 @@ export default function Register() {
 
               <input type="text" required placeholder={t.usernamePlaceholder} className="w-full bg-black/20 border border-white/10 text-white p-4 rounded-2xl focus:border-blue-500/50 outline-none placeholder:text-gray-500/70 shadow-inner" value={username} onChange={e => setUsername(e.target.value)} />
               
-              <button type="submit" className="w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md">
-                {t.finish}
+              <button type="submit" disabled={isPending} className={`w-full bg-blue-600/80 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)] border border-blue-400/30 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed`}>
+                {isPending ? '...' : t.finish}
               </button>
             </form>
 
@@ -218,8 +228,8 @@ export default function Register() {
               {timeLeft > 0 ? (
                 <p className="text-gray-400 text-sm font-light">{t.codeValid} <span className="text-blue-400 font-mono font-bold">{formatTime(timeLeft)}</span></p>
               ) : (
-                <button onClick={handleResendCode} className="text-blue-400 text-sm font-bold hover:text-blue-300 transition-all">
-                  {t.resendCode}
+                <button onClick={handleResendCode} disabled={isPending} className={`text-blue-400 text-sm font-bold hover:text-blue-300 transition-all disabled:opacity-50`}>
+                  {isPending ? '...' : t.resendCode}
                 </button>
               )}
             </div>
