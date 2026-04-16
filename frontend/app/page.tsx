@@ -31,7 +31,7 @@ export default function Home() {
   const [messages, setMessages] = useState<any[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false); // Для фикса лагов кнопки
+  const [isExporting, setIsExporting] = useState(false); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isListening, setIsListening] = useState(false);
   
@@ -41,6 +41,7 @@ export default function Home() {
   
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // РЕФ ДЛЯ ФАЙЛА
 
   const API_URL = 'https://adal-qadam.onrender.com';
 
@@ -80,72 +81,34 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  // --- ЖЕЛЕЗОБЕТОННЫЙ МЕТОД: ПЕЧАТЬ ЧЕРЕЗ НОВОЕ ОКНО (БЕЗ ЛАГОВ) ---
   const downloadPDF = (content: string, title: string) => {
     if (typeof window === 'undefined') return;
-    
     setIsExporting(true);
-
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
       alert("Браузер заблокировал окно. Пожалуйста, разрешите всплывающие окна в настройках.");
       setIsExporting(false);
       return;
     }
-
-    // Записываем чистый HTML с юридическими стилями
     printWindow.document.write(`
       <html>
         <head>
           <title>Adal Qadam - Document</title>
           <style>
-            body { 
-              font-family: "Times New Roman", Times, serif; 
-              padding: 40px; 
-              line-height: 1.6; 
-              font-size: 14pt; 
-              color: black; 
-              background: white;
-            }
-            /* Сбрасываем цвета ИИ-форматирования для печати */
+            body { font-family: "Times New Roman", Times, serif; padding: 40px; line-height: 1.6; font-size: 14pt; color: black; background: white; }
             h1, h2, h3, strong, span, div { color: black !important; }
-            @media print {
-              @page { margin: 2cm; }
-              .no-print { display: none; }
-              body { padding: 0; }
-            }
-            .no-print {
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              padding: 12px 24px;
-              background: #2563eb;
-              color: white;
-              border: none;
-              border-radius: 10px;
-              cursor: pointer;
-              font-family: sans-serif;
-              font-weight: bold;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            }
+            @media print { @page { margin: 2cm; } .no-print { display: none; } body { padding: 0; } }
+            .no-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 10px; cursor: pointer; font-family: sans-serif; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
           </style>
         </head>
         <body>
           <button class="no-print" onclick="window.print()">ПЕЧАТЬ / СОХРАНИТЬ PDF</button>
           <div>${content}</div>
-          <script>
-            // Даем время на отрисовку и вызываем печать
-            setTimeout(() => {
-              window.print();
-            }, 500);
-          </script>
+          <script>setTimeout(() => { window.print(); }, 500);</script>
         </body>
       </html>
     `);
-
     printWindow.document.close();
-    
-    // Возвращаем кнопку в обычное состояние через секунду
     setTimeout(() => setIsExporting(false), 1000);
   };
 
@@ -154,13 +117,11 @@ export default function Home() {
       alert("Ваш браузер не поддерживает голосовой ввод.");
       return;
     }
-
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).speechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'ru-RU';
     recognition.continuous = false;
     recognition.interimResults = false;
-
     if (!isListening) {
       recognition.start();
       setIsListening(true);
@@ -168,13 +129,11 @@ export default function Home() {
       setIsListening(false);
       return;
     }
-
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setText(prev => prev + (prev ? " " : "") + transcript);
       setIsListening(false);
     };
-
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
   };
@@ -248,7 +207,6 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setMessages(prev => [...prev, { role: 'ai', content: data.analysis }]);
-
         if (!activeCaseId && data.case_id) {
           setActiveCaseId(data.case_id);
           loadCases();
@@ -361,21 +319,52 @@ export default function Home() {
         </div>
 
         <div className="absolute bottom-6 w-full px-6 md:px-12 flex justify-center z-10">
-          <div className="w-full max-w-5xl flex items-end gap-2 bg-[#080f1e]/95 backdrop-blur-2xl p-3 rounded-3xl border border-blue-500/20">
-            <button onClick={toggleListening} className={`p-3.5 rounded-2xl ${isListening ? 'bg-red-500/20 text-red-400' : 'text-blue-400'}`}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-            </button>
-            <textarea
-              className="flex-1 bg-transparent text-white outline-none resize-none py-3 px-2"
-              rows={1}
-              placeholder={t.placeholder}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            />
-            <button onClick={handleSend} disabled={loading || (!text && !file)} className="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg disabled:opacity-50">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-            </button>
+          <div className="w-full max-w-5xl flex flex-col gap-2">
+            
+            {/* ОТОБРАЖЕНИЕ ВЫБРАННОГО ФАЙЛА */}
+            {file && (
+              <div className="flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 self-start px-3 py-1 rounded-full text-xs text-blue-200 ml-4">
+                <span>📎 {file.name}</span>
+                <button onClick={() => setFile(null)} className="hover:text-red-400">×</button>
+              </div>
+            )}
+
+            <div className="w-full flex items-end gap-2 bg-[#080f1e]/95 backdrop-blur-2xl p-3 rounded-3xl border border-blue-500/20">
+              
+              {/* СКРЫТЫЙ ИНПУТ */}
+              <input 
+                type="file" 
+                accept="application/pdf" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+
+              {/* КНОПКА СКРЕПКИ */}
+              <button 
+                onClick={() => fileInputRef.current?.click()} 
+                className={`p-3.5 rounded-2xl transition-all ${file ? 'text-blue-400 bg-blue-500/10' : 'text-gray-500 hover:text-blue-400'}`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+              </button>
+
+              <button onClick={toggleListening} className={`p-3.5 rounded-2xl ${isListening ? 'bg-red-500/20 text-red-400' : 'text-blue-400'}`}>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+              </button>
+
+              <textarea
+                className="flex-1 bg-transparent text-white outline-none resize-none py-3 px-2"
+                rows={1}
+                placeholder={t.placeholder}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              />
+
+              <button onClick={handleSend} disabled={loading || (!text && !file)} className="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg disabled:opacity-50">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+              </button>
+            </div>
           </div>
         </div>
       </main>
