@@ -80,56 +80,73 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ БЕЗ ЛАГОВ ---
-  const downloadPDF = async (content: string, title: string) => {
-    if (typeof window === 'undefined' || isExporting) return;
+  // --- ЖЕЛЕЗОБЕТОННЫЙ МЕТОД: ПЕЧАТЬ ЧЕРЕЗ НОВОЕ ОКНО (БЕЗ ЛАГОВ) ---
+  const downloadPDF = (content: string, title: string) => {
+    if (typeof window === 'undefined') return;
     
-    // @ts-ignore
-    const html2pdf = window.html2pdf;
-    if (!html2pdf) {
-      alert("Модуль еще загружается...");
+    setIsExporting(true);
+
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      alert("Браузер заблокировал окно. Пожалуйста, разрешите всплывающие окна в настройках.");
+      setIsExporting(false);
       return;
     }
 
-    setIsExporting(true);
+    // Записываем чистый HTML с юридическими стилями
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Adal Qadam - Document</title>
+          <style>
+            body { 
+              font-family: "Times New Roman", Times, serif; 
+              padding: 40px; 
+              line-height: 1.6; 
+              font-size: 14pt; 
+              color: black; 
+              background: white;
+            }
+            /* Сбрасываем цвета ИИ-форматирования для печати */
+            h1, h2, h3, strong, span, div { color: black !important; }
+            @media print {
+              @page { margin: 2cm; }
+              .no-print { display: none; }
+              body { padding: 0; }
+            }
+            .no-print {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              padding: 12px 24px;
+              background: #2563eb;
+              color: white;
+              border: none;
+              border-radius: 10px;
+              cursor: pointer;
+              font-family: sans-serif;
+              font-weight: bold;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+          </style>
+        </head>
+        <body>
+          <button class="no-print" onclick="window.print()">ПЕЧАТЬ / СОХРАНИТЬ PDF</button>
+          <div>${content}</div>
+          <script>
+            // Даем время на отрисовку и вызываем печать
+            setTimeout(() => {
+              window.print();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
 
-    // Создаем изолированный элемент вне видимости и основного дерева стилей
-    const element = document.createElement('div');
-    element.style.position = 'absolute';
-    element.style.left = '-9999px';
-    element.style.top = '0';
-    element.style.width = '700px'; // Фиксированная ширина для стабильного рендера
-    element.style.background = 'white';
-    element.style.color = 'black';
+    printWindow.document.close();
     
-    element.innerHTML = `
-      <div style="padding: 50px; font-family: 'Times New Roman', Times, serif; line-height: 1.5; font-size: 14pt;">
-        ${content}
-      </div>
-    `;
-    document.body.appendChild(element);
-
-    const opt = {
-      margin: 0.5,
-      filename: `Adal_Qadam_${title || 'doc'}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { 
-        scale: 1, // Scale 1 намного быстрее и не вешает браузер
-        useCORS: true,
-        logging: false,
-        letterRendering: true
-      },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait', compress: true }
-    };
-
-    try {
-      await html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error("PDF Error:", err);
-    } finally {
-      document.body.removeChild(element);
-      setIsExporting(false);
-    }
+    // Возвращаем кнопку в обычное состояние через секунду
+    setTimeout(() => setIsExporting(false), 1000);
   };
 
   const toggleListening = () => {
