@@ -7,17 +7,20 @@ const translations = {
   ru: {
     newCase: "Новое дело", profile: "Личный кабинет", logout: "Выйти",
     placeholder: "Опишите ситуацию или выберите шаблон...", subtext: "Ваш цифровой юрист РК.",
-    openTemplates: "📄 Открыть шаблоны", loading: "Анализ базы законов РК...", pdf: "СКАЧАТЬ PDF"
+    openTemplates: "📄 Открыть шаблоны", loading: "Анализ базы законов РК...", pdf: "СКАЧАТЬ PDF",
+    exporting: "ГЕНЕРАЦИЯ..."
   },
   kk: {
     newCase: "Жаңа іс", profile: "Жеке кабинет", logout: "Шығу",
     placeholder: "Жағдайды сипаттаңыз немесе үлгіні таңдаңыз...", subtext: "Сіздің цифрлық заңгеріңіз (ҚР).",
-    openTemplates: "📄 Үлгілерді ашу", loading: "ҚР заңдар базасын талдау...", pdf: "PDF ЖҮКТЕУ"
+    openTemplates: "📄 Үлгілерді ашу", loading: "ҚР заңдар базасын талдау...", pdf: "PDF ЖҮКТЕУ",
+    exporting: "ЖҮКТЕУ..."
   },
   en: {
     newCase: "New Case", profile: "Profile", logout: "Logout",
     placeholder: "Describe the situation or choose a template...", subtext: "Your digital lawyer in RK.",
-    openTemplates: "📄 Open Templates", loading: "Analyzing the RK legal database...", pdf: "DOWNLOAD PDF"
+    openTemplates: "📄 Open Templates", loading: "Analyzing the RK legal database...", pdf: "DOWNLOAD PDF",
+    exporting: "EXPORTING..."
   }
 };
 
@@ -28,6 +31,7 @@ export default function Home() {
   const [messages, setMessages] = useState<any[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false); // Для фикса лагов кнопки
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isListening, setIsListening] = useState(false);
   
@@ -61,7 +65,6 @@ export default function Home() {
       }, 500);
     }
 
-    // Загружаем скрипт только один раз
     if (!document.getElementById('pdf-script')) {
       const script = document.createElement('script');
       script.id = 'pdf-script';
@@ -77,42 +80,56 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  // --- ЖЕЛЕЗОБЕТОННАЯ ФУНКЦИЯ PDF ---
-  const downloadPDF = (content: string, title: string) => {
-    if (typeof window === 'undefined') return;
+  // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ БЕЗ ЛАГОВ ---
+  const downloadPDF = async (content: string, title: string) => {
+    if (typeof window === 'undefined' || isExporting) return;
     
     // @ts-ignore
-    const lib = window.html2pdf;
-    if (!lib) {
-      alert("Модуль еще загружается. Попробуйте через 3 секунды.");
+    const html2pdf = window.html2pdf;
+    if (!html2pdf) {
+      alert("Модуль еще загружается...");
       return;
     }
 
-    // Обертка в setTimeout(0), чтобы браузер не "лагал" и сначала обработал клик
-    setTimeout(() => {
-      const element = document.createElement('div');
-      element.innerHTML = `
-        <div style="padding: 40px; font-family: 'Times New Roman', Times, serif; color: black; background: white; line-height: 1.4; font-size: 14pt;">
-          ${content}
-        </div>
-      `;
-      
-      const opt = {
-        margin: 0.5,
-        filename: `Adal_Qadam_${title || 'doc'}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { 
-          scale: 1.5, // Уменьшили масштаб с 2 до 1.5 для скорости
-          useCORS: true, 
-          logging: false 
-        },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
+    setIsExporting(true);
 
-      lib().set(opt).from(element).save().then(() => {
-        console.log("PDF скачан успешно");
-      });
-    }, 0);
+    // Создаем изолированный элемент вне видимости и основного дерева стилей
+    const element = document.createElement('div');
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    element.style.top = '0';
+    element.style.width = '700px'; // Фиксированная ширина для стабильного рендера
+    element.style.background = 'white';
+    element.style.color = 'black';
+    
+    element.innerHTML = `
+      <div style="padding: 50px; font-family: 'Times New Roman', Times, serif; line-height: 1.5; font-size: 14pt;">
+        ${content}
+      </div>
+    `;
+    document.body.appendChild(element);
+
+    const opt = {
+      margin: 0.5,
+      filename: `Adal_Qadam_${title || 'doc'}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { 
+        scale: 1, // Scale 1 намного быстрее и не вешает браузер
+        useCORS: true,
+        logging: false,
+        letterRendering: true
+      },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait', compress: true }
+    };
+
+    try {
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Error:", err);
+    } finally {
+      document.body.removeChild(element);
+      setIsExporting(false);
+    }
   };
 
   const toggleListening = () => {
@@ -308,9 +325,13 @@ export default function Home() {
                   <div className={`rounded-3xl p-6 relative ${msg.role === 'user' ? 'bg-blue-600/40 border border-blue-400/30 max-w-[80%]' : 'bg-[#0f192e] border border-blue-500/20 w-full'}`}>
                     <div className="prose prose-invert max-w-none text-gray-300" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                     {msg.role === 'ai' && (
-                      <button onClick={() => downloadPDF(formatMessage(msg.content), activeCaseId ? activeCaseId.toString() : 'doc')} className="mt-6 flex items-center justify-center w-[160px] gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg">
+                      <button 
+                        disabled={isExporting}
+                        onClick={() => downloadPDF(formatMessage(msg.content), activeCaseId ? activeCaseId.toString() : 'doc')} 
+                        className={`mt-6 flex items-center justify-center w-[160px] gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-500 transition-all shadow-lg ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        {t.pdf}
+                        {isExporting ? t.exporting : t.pdf}
                       </button>
                     )}
                   </div>
