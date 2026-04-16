@@ -73,8 +73,18 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
+  // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
   const downloadPDF = (content: string, title: string) => {
     if (typeof window === 'undefined') return;
+
+    // Проверяем наличие библиотеки в глобальной области
+    // @ts-ignore
+    const html2pdf = window.html2pdf;
+
+    if (!html2pdf) {
+      alert("Модуль PDF еще загружается, подождите пару секунд...");
+      return;
+    }
 
     const element = document.createElement('div');
     element.innerHTML = `
@@ -87,16 +97,15 @@ export default function Home() {
       margin: 0.5,
       filename: `Документ_${title || 'дело'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    // @ts-ignore
-    if (window.html2pdf) {
-      // @ts-ignore
-      window.html2pdf().set(opt).from(element).save();
-    } else {
-      alert("Пожалуйста, подождите секунду, модуль генерации документов еще загружается...");
+    try {
+      html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Error:", err);
+      alert("Ошибка при создании файла.");
     }
   };
 
