@@ -61,10 +61,14 @@ export default function Home() {
       }, 500);
     }
 
-    const script = document.createElement('script');
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    script.async = true;
-    document.body.appendChild(script);
+    // Загружаем скрипт только один раз
+    if (!document.getElementById('pdf-script')) {
+      const script = document.createElement('script');
+      script.id = 'pdf-script';
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -73,40 +77,42 @@ export default function Home() {
     }, 100);
   }, [messages, loading]);
 
-  // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ---
+  // --- ЖЕЛЕЗОБЕТОННАЯ ФУНКЦИЯ PDF ---
   const downloadPDF = (content: string, title: string) => {
     if (typeof window === 'undefined') return;
-
-    // Проверяем наличие библиотеки в глобальной области
+    
     // @ts-ignore
-    const html2pdf = window.html2pdf;
-
-    if (!html2pdf) {
-      alert("Модуль PDF еще загружается, подождите пару секунд...");
+    const lib = window.html2pdf;
+    if (!lib) {
+      alert("Модуль еще загружается. Попробуйте через 3 секунды.");
       return;
     }
 
-    const element = document.createElement('div');
-    element.innerHTML = `
-      <div style="padding: 40px; font-family: 'Times New Roman', Times, serif; color: black; background: white; line-height: 1.5; font-size: 14pt;">
-        ${content}
-      </div>
-    `;
-    
-    const opt = {
-      margin: 0.5,
-      filename: `Документ_${title || 'дело'}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
+    // Обертка в setTimeout(0), чтобы браузер не "лагал" и сначала обработал клик
+    setTimeout(() => {
+      const element = document.createElement('div');
+      element.innerHTML = `
+        <div style="padding: 40px; font-family: 'Times New Roman', Times, serif; color: black; background: white; line-height: 1.4; font-size: 14pt;">
+          ${content}
+        </div>
+      `;
+      
+      const opt = {
+        margin: 0.5,
+        filename: `Adal_Qadam_${title || 'doc'}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { 
+          scale: 1.5, // Уменьшили масштаб с 2 до 1.5 для скорости
+          useCORS: true, 
+          logging: false 
+        },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
 
-    try {
-      html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error("PDF Error:", err);
-      alert("Ошибка при создании файла.");
-    }
+      lib().set(opt).from(element).save().then(() => {
+        console.log("PDF скачан успешно");
+      });
+    }, 0);
   };
 
   const toggleListening = () => {
