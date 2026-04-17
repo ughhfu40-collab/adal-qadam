@@ -33,7 +33,7 @@ const translations = {
     errorTaken: "Бұл логин бос емес немесе қате кетті", tryAgain: "Артқа"
   },
   en: {
-    chat: "AI Chat", templates: " Templates", knowledge: "🎓 Knowledge Base",
+    chat: "AI Chat", templates: " Templates", knowledge: " Knowledge Base",
     lawyers: " Lawyers Directory", audit: " Lawyer Audit", logout: "Logout",
     saved: "Saved", docs: "Documents", empty: "History is empty",
     untitled: "Untitled", docName: "Document",
