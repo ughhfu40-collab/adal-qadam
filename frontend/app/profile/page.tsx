@@ -5,8 +5,8 @@ import { useLanguage } from '../LanguageContext';
 
 const translations = {
   ru: {
-    chat: "В чат ИИ", templates: "📄 Шаблоны документов", knowledge: "🎓 База знаний",
-    lawyers: "👨‍⚖️ Каталог адвокатов", audit: "🕵️‍♂️ Проверка юриста", logout: "Выйти",
+    chat: "В чат ИИ", templates: " Шаблоны документов", knowledge: " База знаний",
+    lawyers: " Каталог адвокатов", audit: " Проверка юриста", logout: "Выйти",
     saved: "Сэкономлено", docs: "Документы", empty: "История пуста",
     untitled: "Без названия", docName: "Документ",
     discTitle: "Юридические оговорки и защита от ответственности",
@@ -19,8 +19,8 @@ const translations = {
     errorTaken: "Этот логин уже занят или произошла ошибка", tryAgain: "Назад"
   },
   kk: {
-    chat: "ЖИ чатқа", templates: "📄 Құжат үлгілері", knowledge: "🎓 Білім базасы",
-    lawyers: "👨‍⚖️ Адвокаттар каталогы", audit: "🕵️‍♂️ Заңгер тексеруі", logout: "Шығу",
+    chat: "ЖИ чатқа", templates: " Құжат үлгілері", knowledge: " Білім базасы",
+    lawyers: " Адвокаттар каталогы", audit: " Заңгер тексеруі", logout: "Шығу",
     saved: "Үнемделді", docs: "Құжаттар", empty: "Тарих бос",
     untitled: "Атаусыз", docName: "Құжат",
     discTitle: "Құқықтық ескертулер және жауапкершіліктен қорғау",
@@ -33,8 +33,8 @@ const translations = {
     errorTaken: "Бұл логин бос емес немесе қате кетті", tryAgain: "Артқа"
   },
   en: {
-    chat: "AI Chat", templates: "📄 Templates", knowledge: "🎓 Knowledge Base",
-    lawyers: "👨‍⚖️ Lawyers Directory", audit: "🕵️‍♂️ Lawyer Audit", logout: "Logout",
+    chat: "AI Chat", templates: " Templates", knowledge: "🎓 Knowledge Base",
+    lawyers: " Lawyers Directory", audit: " Lawyer Audit", logout: "Logout",
     saved: "Saved", docs: "Documents", empty: "History is empty",
     untitled: "Untitled", docName: "Document",
     discTitle: "Legal Disclaimers and Liability Protection",
@@ -55,7 +55,7 @@ export default function Profile() {
   const [loadingError, setLoadingError] = useState("");
   const router = useRouter();
 
-  const { lang, cycleLanguage } = useLanguage(); // ЗДЕСЬ ЕСТЬ ФУНКЦИЯ ДЛЯ КНОПКИ
+  const { lang, cycleLanguage } = useLanguage(); 
   const t = translations[lang];
 
   const API_URL = 'https://adal-qadam.onrender.com';
